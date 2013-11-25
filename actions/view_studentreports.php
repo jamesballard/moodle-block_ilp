@@ -9,7 +9,7 @@
 * @version 2.0
 */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 
 global $USER, $CFG, $SESSION, $PARSER, $PAGE;
@@ -44,9 +44,6 @@ $displaysummary  =	$PARSER->optional_param('summary', 0, PARAM_INT);
 $displayuserentries  =	$PARSER->optional_param('userentries', 1, PARAM_INT);
 
 $displaynonuserentries  =	$PARSER->optional_param('nonuserentries', 1, PARAM_INT);
-
-
-
 
 // instantiate the db
 $dbc = new ilp_db();
@@ -88,11 +85,13 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-reportlist');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url($CFG->wwwroot."/blocks/ilp/actions/view_studentreports.php",$PARSER->get_params());
 
 
 $report     =   $dbc->get_report_by_id($report_id);
+
+$PAGE->navbar->add($report->name,null,'title');
 
 if (empty($report)) {
     print_error('reportnotfound','block_ilp');
@@ -134,16 +133,13 @@ if (!empty($course_id)) {
     $temp->report   =   $report->name;
     $pagetitle	=	get_string('courseentries','block_ilp',$temp);
 
-    if (stripos($CFG->release,"2.") !== false) {
-        $ucourses	=	enrol_get_users_courses($USER->id, false,NULL,'shortname ASC');
-    } else {
-        $ucourses	=	$dbc->get_user_courses($USER->id);
-    }
+    $ucourses	=	enrol_get_users_courses($USER->id, false,NULL,'shortname ASC');
+
     $user_courses	=	array();
 
 
     foreach ($ucourses as $uc) {
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $uc->id);
+        $coursecontext = context_course::instance($uc->id);
         //if the user has the capability to view the course then add it to the array
         if (has_capability('block/ilp:viewotherilp', $coursecontext,$USER->id,false))	{
             $user_courses[]	=	$uc;

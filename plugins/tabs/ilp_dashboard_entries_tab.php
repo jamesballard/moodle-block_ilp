@@ -124,36 +124,26 @@ class ilp_dashboard_entries_tab extends ilp_dashboard_tab {
         $reporttab		=	$this->dbc->get_plugin_record_by_classname('block_ilp_dash_tab','ilp_dashboard_reports_tab');
 
         //get all enabled reports in this ilp
-        $reports		=	$this->dbc->get_reports_by_position(null,null,false);
+        $reports		=	ilp_report::get_enabledreports();
         $reportslist	=	array();
         if (!empty($reports)) {
-
-            $role_ids	=	ilp_get_user_role_ids($PAGE->context,$USER->id);
-            $authuserrole	=	$this->dbc->get_role_by_name(ILP_AUTH_USER_ROLE);
-            if (!empty($authuserrole)) $role_ids[]	=	$authuserrole->id;
 
             //cycle through all reports and save the relevant details
             foreach ($reports	as $r) {
 
-                $addcapability		=	$this->dbc->get_capability_by_name('block/ilp:addreport');
+                if ($r->vault == 1 || !$r->has_cap($USER->id,$PAGE->context,'block/ilp:viewreport')) {
+                    continue;
+                }
 
-                $editcapability		=	$this->dbc->get_capability_by_name('block/ilp:editreport');
+                $canviewreport		=	true;
 
-                $viewcapability		=	$this->dbc->get_capability_by_name('block/ilp:viewreport');
+                $caneditreport		=	$r->has_cap($USER->id,$PAGE->context,'block/ilp:editreport');
 
-                $viewothercapability		=	$this->dbc->get_capability_by_name('block/ilp:viewotherilp');
+                $canaddreport		=	$r->has_cap($USER->id,$PAGE->context,'block/ilp:addreport');
 
-                $addviewextcapability = $this->dbc->get_capability_by_name('block/ilp:addviewextension');
+                $canviewothersreports		=	$r->has_cap($USER->id,$PAGE->context,'block/ilp:viewotherilp');
 
-                $caneditreport		=	$this->dbc->has_report_permission($r->id,$role_ids,$editcapability->id);
-
-                $canaddreport		=	$this->dbc->has_report_permission($r->id,$role_ids,$addcapability->id);
-
-                $canviewreport		=	$this->dbc->has_report_permission($r->id,$role_ids,$viewcapability->id);
-
-                $canviewothersreports		=	$this->dbc->has_report_permission($r->id,$role_ids,$viewothercapability->id);
-
-                $canaddviewextreport		=	$this->dbc->has_report_permission($r->id,$role_ids,$addviewextcapability->id);
+                $canaddviewextreport		=	$r->has_cap($USER->id,$PAGE->context,'block/ilp:viewextension');
 
                 if (!empty($caneditreport) || !empty($canaddreport) || !empty($canviewreport) ) {
 
@@ -172,8 +162,7 @@ class ilp_dashboard_entries_tab extends ilp_dashboard_tab {
                     $detail->entries		=	($this->dbc->count_report_entries($r->id,$this->student_id)) ? $this->dbc->count_report_entries($r->id,$this->student_id) : 0;
                     $detail->state_report	=	false;
 
-                    $res = $this->dbc->has_plugin_field($r->id,'ilp_element_plugin_state');
-                    if ($res) {
+                    if ($this->dbc->has_plugin_field($r->id,'ilp_element_plugin_state')) {
                         //get the number of entries achieved
                         $detail->achieved	=	$this->dbc->count_report_entries_with_state($r->id,$this->student_id,ILP_STATE_PASS);
 
@@ -204,6 +193,7 @@ class ilp_dashboard_entries_tab extends ilp_dashboard_tab {
 
                     //get the last updated report entry
                     $lastentry				=	$this->dbc->get_lastupdatedentry($r->id,$this->student_id);
+                    $lastentry              =   reset($lastentry);
                     $lastupdate				=	$this->dbc->get_lastupdatetime($r->id,$this->student_id,false);
 
                     $detail->frequency		=	$r->frequency;
@@ -285,30 +275,6 @@ class ilp_dashboard_entries_tab extends ilp_dashboard_tab {
         require_once($CFG->dirroot.'/blocks/ilp/plugins/tabs/ilp_dashboard_entries_tab.html');
     }
 
-
-
-
-
-	/**
-	 * Adds the string values from the tab to the language file
-	 *
-	 * @param	array &$string the language strings array passed by reference so we
-	 * just need to simply add the plugins entries on to it
-	 */
-	 static function language_strings(&$string) {
-        $string['ilp_dashboard_entries_tab'] 					= 'entries tab';
-        $string['ilp_dashboard_entries_tab_name'] 				= 'Entries';
-        $string['ilp_dashboard_entries_tab_overview'] 			= 'Overview';
-        $string['ilp_dashboard_entries_tab_lastupdate'] 		= 'Last Update';
-        $string['ilp_dashboard_entries_tab_graphstatusdesc'] 		= 'Should liniks to graphical stats be displayed on the entries tab if installed';
-        $string['ilp_dashboard_entries_tab_displaythumbs'] 		    = 'Display thumbnail links';
-         $string['ilp_dashboard_entries_tab_displaylinks'] 		    = 'Display text links';
-         $string['ilp_dashboard_entries_tab_graphs'] 		        = 'Graph(s):';
-         $string['ilp_dashboard_entries_tab_displayicons'] 		        = 'Display icon links';
-
-        return $string;
-    }
-
     /**
      * Adds config settings for the plugin to the given mform
      * by default this allows config option allows a tab to be enabled or dispabled
@@ -339,5 +305,19 @@ class ilp_dashboard_entries_tab extends ilp_dashboard_tab {
         $this->config_select_element($mform,$classname.'_pluginstatus',$options,get_string($classname.'_name', 'block_ilp'),get_string('tabstatusdesc', 'block_ilp'),0);
 
     }
+	
+		/**
+	 * Adds the string values from the tab to the language file
+	 *
+	 * @param	array &$string the language strings array passed by reference so we  
+	 * just need to simply add the plugins entries on to it
+	 */
+	 static function language_strings(&$string) {
+        $string['ilp_dashboard_reports_tab_graphstatus'] 					= 'Entries Display Type';
+        $string['ilp_dashboard_reports_tab_graphstatusdesc'] 				= 'How do you want to display the entries on the tab.';
+        
+        return $string;
+    }
+	
 
 }

@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -30,18 +30,33 @@ $report_id	= $PARSER->optional_param('report_id',NULL,PARAM_INT);	;
 // instantiate the db
 $dbc = new ilp_db();
 
+// If any reports exist with null values for position, give them a position that retains the current order.
+$null_position_report = $dbc->null_position_reports();
+$min_position = $dbc->upperlower_report_position('MIN');
+
+if ($null_position_report) {
+    $dbc->create_report_positions_where_null($null_position_report, $min_position);
+}
+
+if (!$dbc->report_position_sequence_is_continuous($min_position)) {
+    $dbc->report_position_resequence(1);
+}
+
+
+
+
 // setup the navigation breadcrumbs
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -61,7 +76,7 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_report_configuration.php', $PARSER->get_params());
 
 

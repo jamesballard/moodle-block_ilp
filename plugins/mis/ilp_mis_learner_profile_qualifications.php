@@ -305,13 +305,14 @@ class ilp_mis_learner_profile_qualifications extends ilp_mis_plugin	{
         $string['ilp_mis_learner_qualifications_average']							= 'Average Points:';
 
         $string['ilp_mis_learner_qualifications_tab_name']							= 'Qualification of Entry';
-
+		$string['ilp_mis_learner_qualifications_prelimcalls']						= 'Preliminary db calls';
+        $string['ilp_mis_learner_qualifications_prelimcallsdesc']					= 'preliminary calls that need to be made to the db before the sql is executed';
         
         return $string;
     }
 
     
-    function plugin_type()	{
+    static function plugin_type()	{
     	return 'learnerprofile';
     }
  	

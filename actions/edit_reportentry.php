@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 
@@ -19,10 +19,7 @@ global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 // Meta includes
 require_once($CFG->dirroot.'/blocks/ilp/actions_includes.php');
 
-// Include the report permissions file
-require_once($CFG->dirroot.'/blocks/ilp/report_permissions.php');
-
-//if set get the id of the report 
+//if set get the id of the report
 $report_id	= $PARSER->required_param('report_id',PARAM_INT);	
 
 
@@ -59,6 +56,10 @@ $dbc = new ilp_db();
 
 //get the report 
 $report		=	$dbc->get_report_by_id($report_id);
+
+$access_report_createreports = $report->has_cap($USER->id,$PAGE->context,'block/ilp:addreport');
+$access_report_editreports = $report->has_cap($USER->id,$PAGE->context,'block/ilp:editreport');
+$access_viewotherilp = $report->has_cap($USER->id,$PAGE->context,'block/ilp:viewotherilp');
 
 //if the report is not found throw an error of if the report has a status of disabled
 if (empty($report) || empty($report->status) || !empty($report->deleted)) {
@@ -111,6 +112,16 @@ if (!empty($previouspressed))   {
     $currentpage--;
 }
 
+$jsarguments = array();
+
+$jsmodule = array(
+    'name'     	=> 'ilp_edit_reportentry',
+    'fullpath' 	=> '/blocks/ilp/views/js/edit_reportentry.js',
+    'requires'  	=> array('event','dom','node','io-form','anim-base','anim-xy','anim-easing','anim', 'node-event-simulate')
+);
+
+$PAGE->requires->js_init_call('M.ilp_edit_reportentry.init', $jsarguments, true, $jsmodule);
+
 $mform	= new	report_entry_mform($report_id,$user_id,$entry_id,$course_id, $currentpage);
 
 //was the form cancelled?
@@ -129,6 +140,23 @@ if($mform->is_submitted()) {
     //TODO: reimplement validation
    // if($mform->is_validated()) {
 
+//Flush any cache entries that contain this user.
+//This is pretty awful but still has a significent speed advantage
+   $CACHE=cache::make('block_ilp','ilp_miscache');
+   if($keysets=$CACHE->get('keysets'))
+   {
+      $invalid=array();
+      foreach(array_keys($keysets) as $key)
+      {
+         if(in_array($user_id,explode('|',$key)))
+         {
+            $invalid[]=$key;
+            unset($keysets[$key]);
+         }
+      }
+      cache_helper::invalidate_by_definition('block_ilp','ilp_miscache',array(),$invalid);
+      $CACHE->set('keysets',$keysets);
+   }
 
         //call the next function which will carry out the necessary actions if the next button was pressed
         $mform->next($report_id,$currentpage);
@@ -222,6 +250,7 @@ if (!empty($entry_id)) {
 			
 			//call the plugin class entry data method
 			$pluginclass->entry_data($field->id,$entry_id,$entry_data);
+
 		}
 
 		//loop through the plugins and get the data for each one
@@ -248,7 +277,7 @@ if ($user_id != $USER->id) {
 	$PAGE->navbar->add(get_string('myilp', 'block_ilp'),$dashboardurl,'title');
 }
 
-//user intials
+//user initials
 $PAGE->navbar->add(fullname($plpuser),$userprofileurl,'title');
 
 //section name
@@ -261,9 +290,9 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp')." : ".fullname($plpuser));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-entry');
-//$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url($CFG->wwwroot."/blocks/ilp/actions/edit_reportentry.php",$PARSER->get_params());
 
 //require edit_reportentry html
 require_once($CFG->dirroot.'/blocks/ilp/views/edit_reportentry.html');
-?>
+

@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 
@@ -19,10 +19,7 @@ global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 // Meta includes
 require_once($CFG->dirroot.'/blocks/ilp/actions_includes.php');
 
-// Include the report permissions file
-require_once($CFG->dirroot.'/blocks/ilp/report_permissions.php');
-
-//if set get the id of the report 
+//if set get the id of the report
 $report_id	= $PARSER->required_param('report_id',PARAM_INT);	
 
 
@@ -52,6 +49,8 @@ $dbc = new ilp_db();
 //get the report 
 $report		=	$dbc->get_report_by_id($report_id);
 
+$access_report_deletecomment = $report->has_cap($USER->id,$PAGE->context,'block/ilp:deletecomment');
+
 //if the report is not found throw an error of if the report has a status of disabled
 if (empty($report) || empty($report->status)) {
 	print_error('reportnotfouund','block_ilp');
@@ -79,7 +78,8 @@ $dbc = new ilp_db();
 $dbc->delete_comment_by_id($comment_id);
 
 $return_url = $CFG->wwwroot."/blocks/ilp/actions/view_main.php?user_id={$user_id}&course_id={$course_id}&selectedtab=$selectedtab&tabitem={$tabitem}";
-redirect($return_url, get_string('commeentdeleted','block_ilp'), ILP_REDIRECT_DELAY);
+//redirect($return_url, get_string('commeentdeleted','block_ilp'), ILP_REDIRECT_DELAY);
+redirect($return_url);
 
 
 

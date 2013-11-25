@@ -12,22 +12,25 @@
 
 global $CFG, $PARSER,$USER,$PAGE;
 
-require_once($CFG->dirroot."/blocks/ilp/db/ilp_db.php");
+require_once $CFG->dirroot . "/blocks/ilp/lib.php";
+require_once($CFG->dirroot."/blocks/ilp/classes/database/ilp_db.php");
 
 //get the user id if it is not set then we will pass the global $USER->id 
-$user_id   = $PARSER->optional_param('user_id',$USER->id,PARAM_INT);
+$user_id   = optional_param('user_id',$USER->id,PARAM_INT);
 
 // get the id of the course
-$course_id = $PARSER->optional_param('course_id', 0,PARAM_INT);
-
+$course_id = optional_param('course_id', 0,PARAM_INT);
+if (!$course_id) {
+    $course_id = optional_param('courseid', 0,PARAM_INT);
+}
 
 // the user must be logged in
 require_login(0, false);
 
-$sitecontext	=	get_context_instance(CONTEXT_SYSTEM);
+$sitecontext	=	context_system::instance();
 
 //get the user context
-$usercontext	=	get_context_instance(CONTEXT_USER,$user_id);
+$usercontext	=   context_user::instance($user_id);
 
 
 //if there is no user context then we must throw an error as the user context is the 
@@ -40,7 +43,7 @@ if (empty($usercontext)) {
 if (!empty($course_id)) {
 	
 	// get the current course context
-	$coursecontext = get_context_instance(CONTEXT_COURSE, $course_id);
+	$coursecontext =    context_course::instance($course_id);
 
 	if ($course_id == SITEID)	{
 		$coursecontext =	$sitecontext;
@@ -61,7 +64,6 @@ if(isset($coursecontext)){
 } else  if (has_capability('block/ilp:viewotherilp', $usercontext)) {
 	$context		=	$usercontext;	
 } else if ($user_id == $USER->id) {
-		
 	$context		=	$sitecontext;
 } 
 
@@ -103,6 +105,7 @@ if (!empty($access_ilp_admin)) {
 }
 
 //TODO: we should not be in the course context change to another context
+
 $PAGE->set_context($context);
 
 ?>

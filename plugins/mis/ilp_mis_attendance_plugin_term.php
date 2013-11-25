@@ -34,7 +34,7 @@ class ilp_mis_attendance_plugin_term extends ilp_mis_attendance_plugin
             $sixtermformat = get_config('block_ilp', 'mis_plugin_term_termformat');
 
             //set up the flexible table for displaying
-
+            ob_start();
             //instantiate the ilp_ajax_table class
             $flextable = new ilp_mis_ajax_table('monthly_breakdown', true, 'ilp_mis_attendance_plugin_term');
 
@@ -89,20 +89,19 @@ class ilp_mis_attendance_plugin_term extends ilp_mis_attendance_plugin
 
                 $data['metric'] = $metric['name'];
                 $data['overall'] = $this->percent_format( $metric['overall'] , true );//. '%';
-                $data['one'] = $this->percent_format( $metric[1] , true );//. '%';
-                $data['two'] = $this->percent_format( $metric[2] , true );// . '%';
-                $data['three'] = $this->percent_format( $metric[3] , true );//. '%';
+                $data['one'] = isset($metric[1]) ? $this->percent_format( $metric[1] , true ): 0 ;//. '%';
+                $data['two'] = isset($metric[2]) ? $this->percent_format( $metric[2] , true ): 0 ;//. '%';
+                $data['three'] = isset($metric[3]) ? $this->percent_format( $metric[3] , true ): 0 ;//. '%';
 
                 if (!empty($sixtermformat)) {
-                    $data['four'] = $this->percent_format( $metric[4] , true );// . '%';
-                    $data['five'] = $this->percent_format( $metric[5] , true );// . '%';
-                    $data['six'] = $this->percent_format( $metric[6] , true );// . '%';
+                    $data['four'] = isset($metric[4]) ? $this->percent_format( $metric[4] , true ): 0 ;//. '%';
+                    $data['five'] = isset($metric[5]) ? $this->percent_format( $metric[5] , true ): 0 ;//. '%';
+                    $data['six'] = isset($metric[6]) ? $this->percent_format( $metric[6] , true ): 0 ;//. '%';
                 }
                 $flextable->add_data_keyed($data);
             }
 
-            ob_start();
-            $flextable->print_html();
+            $flextable->finish_html();
             $pluginoutput = ob_get_contents();
             ob_end_clean();
 
@@ -252,18 +251,13 @@ class ilp_mis_attendance_plugin_term extends ilp_mis_attendance_plugin
         foreach ($mis_plugins as $plugin_file) {
         	if (file_exists($plugins.'/'.$plugin_file.".php")) {
 	            require_once($plugins . '/' . $plugin_file . ".php");
-	            // instantiate the object
-	            $class = basename($plugin_file, ".php");
-	            $pluginobj = new $class();
-	            $method = array($pluginobj, 'plugin_type');
-	
-	            //check whether the config_settings method has been defined
-	
-	            if (is_callable($method, true)) {
-	                if ($pluginobj->plugin_type() == 'attendance') {
-	                    $mismisc = $this->dbc->get_mis_plugin_by_name($plugin_file);
-	                    $options[$mismisc->id] = $pluginobj->tab_name();
-	                }
+                    if ($plugin_file::plugin_type() == 'attendance') {
+                       // instantiate the object
+                       $class = basename($plugin_file, ".php");
+                       $pluginobj = new $class();
+
+                       $mismisc = $this->dbc->get_mis_plugin_by_name($plugin_file);
+                       $options[$mismisc->id] = $pluginobj->tab_name();
 	            }
         	}
         }
@@ -311,7 +305,7 @@ class ilp_mis_attendance_plugin_term extends ilp_mis_attendance_plugin
     }
 
 
-    public function plugin_type()
+    public static function plugin_type()
     {
         return 'overview';
     }
@@ -482,22 +476,22 @@ class ilp_mis_attendance_plugin_term extends ilp_mis_attendance_plugin
             $absents = 0;
             $authabsents = 0;
             $lates = 0;
+            $totals=0; //Should really be singular but that breaks the pattern
 
             //now we have all course data nicely in an array we can work the overall totals
             foreach ($termdata as &$term) {
-	                $presents += $term['markspresent'];
-	                $absents += $term['marksabsent'];
-	                $authabsents += $term['marksauthabsent'];
-	                $lates += $term['markslate'];
-                    $total += $term[ 'markstotal' ];
+               foreach(array('present','absent','authabsent','late','total') as $basename)
+               {
+                  $idx='marks'.$basename;
+                  $name=$basename.'s';
+                  $$name+=isset($term[$idx]) ? $term[$idx] : 0;
+               }
             }
 
-
             $present = $this->presents_cal($presents, $authabsents);
-            $presentpercent = ($absents / $total) * 100;
+            $presentpercent = ($absents / $totals) * 100;
             $presentpercent = 100 - $presentpercent;
 
-            
             //overall late percentage is calculated by geting the percentage of lates and taking
             //it away from 100
             $latepercent = 100 - (($lates / $present) * 100);

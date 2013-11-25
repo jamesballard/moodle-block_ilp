@@ -213,33 +213,27 @@ class ilp_element_plugin_file extends ilp_element_plugin {
 
         $fieldname	=	"{$this->reportfield_id}_field";
     	if (!empty($this->description)) {
-    		$mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description),ILP_STRIP_TAGS_DESCRIPTION));
+    		$mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description,
+                                                                                                          ENT_QUOTES,
+                                                                                                          'UTF-8'),ILP_STRIP_TAGS_DESCRIPTION));
     		$this->label = '';
     	}
 
+            $max_files = (empty($this->multiple)) ? 1 : $this->maxfiles;
+            $filemanager_config = array('subdirs' => 0,
+                                      'maxbytes' => $this->maxsize,
+                                      'maxfiles' => $max_files );
+            if (!in_array('all', $this->acceptedtypes)) {
+                $filemanager_config['accepted_types'] = $this->acceptedtypes;
+            }
 
-        if (empty($this->multiple))    {
-
-             $mform->addElement('filemanager',
-                                $fieldname,
-                                $this->label,
-                                null,
-                                array('subdirs' => 0,
-                                      'maxsize' => $this->maxsize,
-                                      'maxfiles' => 1,
-                                      'accepted_types' => $this->acceptedtypes )
-                               );
-        }   else    {
             $mform->addElement('filemanager',
                                 $fieldname,
                                 $this->label,
                                 null,
-                                array('subdirs' => 0,
-                                      'maxsize' => $this->maxsize,
-                                      'maxfiles' => $this->maxfiles,
-                                      'accepted_types' => $this->acceptedtypes )
+                                $filemanager_config
                               );
-        }
+
 
         if (!empty($this->required)) $mform->addRule($fieldname, null, 'required', null, 'client');
 	 }
@@ -266,7 +260,7 @@ class ilp_element_plugin_file extends ilp_element_plugin {
              $fs = get_file_storage();
 
              //get the current users context as this is where the file will have been saved
-             $context = get_context_instance(CONTEXT_USER, $USER->id);
+             $context = context_user::instance($USER->id);
 
              //check if the file exists
              if ($files = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id DESC', false)) {
@@ -340,6 +334,8 @@ class ilp_element_plugin_file extends ilp_element_plugin {
         }
     }
 
-
-	 
+    public function is_exportable()
+    {
+       return false;
+    }
 }

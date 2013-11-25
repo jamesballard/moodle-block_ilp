@@ -98,6 +98,36 @@ M.ilp_standard_functions = {
         return false;
     },
 
+/**
+ * Fetch some url and discard the result.
+ * used to trigger mis caching in the target.
+ */
+    preload :  function(Y,url)
+    {
+        var callback = {
+            //dummy
+            success: function(id,o,args) {
+            },
+            // if it failed then do nothing
+            failure: function(o) {
+            }
+        };
+
+        var cfg =       {
+            on: {
+                success: callback.success,
+                failure: callback.failure
+            },
+            context: callback
+        };
+
+        Y.io(url.replace(/&amp;/g, '&'),cfg);
+
+        // return false to block the anchor firing
+        return false;
+    },
+
+
     /**
      * When ajax stuff comes back and gets added via innerHTML, the inline javascripts don't get run.
      * This will run them.
@@ -115,25 +145,8 @@ M.ilp_standard_functions = {
                 window.setTimeout(scripts[i].text, 0);
             }
         }
-    },
+    }
 
-
-/**
- * Calculates the height attribute of a rendered element.
- *
- * @param elem
- * @return
- */
-get_height  : function(element) {
-    // work out the height of the rendered element minus the extra bits
-    var padding = parseFloat(element.getStyle("padding-top")) + parseFloat(element.getStyle("padding-bottom"));
-    var border = parseFloat(element.getStyle("borderTopWidth")) + parseFloat(element.getStyle("borderBottomWidth"));
-    //additional check added as IE would sometimes return isNaN
-    if (isNaN(border)) border = 0;
-    if (isNaN(padding)) padding = 0;
-
-    return element.get('offsetHeight') - padding - border;
-},
 
     /**
      * Calculates the height attribute of a rendered element.
@@ -141,6 +154,25 @@ get_height  : function(element) {
      * @param elem
      * @return
      */
+        /*
+    get_height  : function(element) {
+        // work out the height of the rendered element minus the extra bits
+        var padding = parseFloat(element.getStyle("padding-top")) + parseFloat(element.getStyle("padding-bottom"));
+        var border = parseFloat(element.getStyle("borderTopWidth")) + parseFloat(element.getStyle("borderBottomWidth"));
+        //additional check added as IE would sometimes return isNaN
+        if (isNaN(border)) border = 0;
+        if (isNaN(padding)) padding = 0;
+
+        return element.get('offsetHeight') - padding - border;
+    },
+*/
+    /**
+     * Calculates the height attribute of a rendered element.
+     *
+     * @param elem
+     * @return
+     */
+        /*
     get_width : function(element) {
 
         // work out the width of the rendered element minus the extra bits
@@ -152,5 +184,6 @@ get_height  : function(element) {
 
         return element.get('offsetWidth') - padding - border;
     }
+    */
 
 }

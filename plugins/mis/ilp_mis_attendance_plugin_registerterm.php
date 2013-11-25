@@ -123,7 +123,7 @@ class ilp_mis_attendance_plugin_registerterm extends ilp_mis_attendance_plugin
             $sixtermformat = get_config('block_ilp', 'mis_plugin_term_termformat');
 
             //set up the flexible table for displaying
-
+            ob_start();
             //instantiate the ilp_ajax_table class
             $flextable = new ilp_mis_ajax_table('monthly_breakdown', true, 'ilp_mis_attendance_plugin_term');
 
@@ -175,36 +175,34 @@ class ilp_mis_attendance_plugin_registerterm extends ilp_mis_attendance_plugin
             $terms = (empty($sixtermformat)) ? 4 : 7;
 
             $data['metric'] = get_string('ilp_mis_attendance_plugin_registerterm_disp_attendance', 'block_ilp');
-            $data['overall'] = $this->percent_format( $summarydata['att_prec'][0], true );
-            $data['one'] = $this->percent_format( $summarydata['att_prec'][1], true );
-            $data['two'] = $this->percent_format( $summarydata['att_prec'][2], true );
-            $data['three'] = $this->percent_format( $summarydata['att_prec'][3], true );
+            $data['overall'] = isset( $summarydata['att_prec'][0] ) ? $this->percent_format( $summarydata['att_prec'][0], true ): 0 ;
+            $data['one'] = isset( $summarydata['att_prec'][1] ) ? $this->percent_format( $summarydata['att_prec'][1], true ): 0 ;
+            $data['two'] = isset( $summarydata['att_prec'][2] ) ? $this->percent_format( $summarydata['att_prec'][2], true ): 0 ;
+            $data['three'] = isset( $summarydata['att_prec'][3] ) ? $this->percent_format( $summarydata['att_prec'][3], true ): 0 ;
 
             if (!empty($sixtermformat)) {
-                $data['four'] = $this->percent_format( $summarydata['att_prec'][4], true );
-                $data['five'] = $this->percent_format( $summarydata['att_prec'][5], true );
-                $data['six'] = $this->percent_format( $summarydata['att_prec'][6], true );
+                $data['four'] = isset( $summarydata['att_prec'][4] ) ? $this->percent_format( $summarydata['att_prec'][4], true ): 0 ;
+                $data['five'] = isset( $summarydata['att_prec'][5] ) ? $this->percent_format( $summarydata['att_prec'][5], true ): 0 ;
+                $data['six'] = isset( $summarydata['att_prec'][6] ) ? $this->percent_format( $summarydata['att_prec'][6], true ): 0 ;
             }
 
             $flextable->add_data_keyed($data);
 
             $data['metric'] = get_string('ilp_mis_attendance_plugin_registerterm_disp_punctuality', 'block_ilp');
-            $data['overall'] = $this->percent_format( $summarydata['pun_perc'][0], true );
-            $data['one'] = $this->percent_format( $summarydata['pun_perc'][1], true );
-            $data['two'] = $this->percent_format( $summarydata['pun_perc'][2], true );
-            $data['three'] = $this->percent_format( $summarydata['pun_perc'][3], true );
+            $data['overall'] = isset( $summarydata['pun_perc'][0] ) ? $this->percent_format( $summarydata['pun_perc'][0], true ): 0 ;
+            $data['one'] = isset( $summarydata['pun_perc'][1] ) ? $this->percent_format( $summarydata['pun_perc'][1], true ): 0 ;
+            $data['two'] = isset( $summarydata['pun_perc'][2] ) ? $this->percent_format( $summarydata['pun_perc'][2], true ): 0 ;
+            $data['three'] = isset( $summarydata['pun_perc'][3] ) ? $this->percent_format( $summarydata['pun_perc'][3], true ): 0 ;
 
             if (!empty($sixtermformat)) {
-                $data['four'] = $this->percent_format( $summarydata['pun_perc'][4], true );
-                $data['five'] = $this->percent_format( $summarydata['pun_perc'][5], true );
-                $data['six'] = $this->percent_format( $summarydata['pun_perc'][6], true );
+                $data['four'] = isset( $summarydata['pun_perc'][4] ) ? $this->percent_format( $summarydata['pun_perc'][4], true ): 0 ;
+                $data['five'] = isset( $summarydata['pun_perc'][5] ) ? $this->percent_format( $summarydata['pun_perc'][5], true ): 0 ;
+                $data['six'] = isset( $summarydata['pun_perc'][6] ) ? $this->percent_format( $summarydata['pun_perc'][6], true ): 0 ;
             }
 
             $flextable->add_data_keyed($data);
 
-
-            ob_start();
-            $flextable->print_html();
+            $flextable->finish_html();
             $output = ob_get_contents();
             ob_end_clean();
 
@@ -309,11 +307,11 @@ function summary_data($data, $term = 0)
 
         global $CFG;
 
-        $cidfield = get_config('block_ilp', 'mis_plugin_register_courseid');
-        $cdatefield = get_config('block_ilp', 'mis_plugin_register_datetime');
-        $markfield = get_config('block_ilp', 'mis_plugin_register_mark');
-        $timefield = get_config('block_ilp', 'mis_plugin_register_datetime');
-        $cnamefield = get_config('block_ilp', 'mis_plugin_register_coursename');
+        $cidfield = get_config('block_ilp', 'mis_plugin_registerterm_courseid');
+        $cdatefield = get_config('block_ilp', 'mis_plugin_registerterm_datetime');
+        $markfield = get_config('block_ilp', 'mis_plugin_registerterm_mark');
+        $timefield = get_config('block_ilp', 'mis_plugin_registerterm_datetime');
+        $cnamefield = get_config('block_ilp', 'mis_plugin_registerterm_coursename');
 
         if (!empty($term)) {
             $yearstart = $this->terms[0]['start'];
@@ -422,7 +420,7 @@ function summary_data($data, $term = 0)
 	            }
         	}
         }
-     
+ 
         return array('total' => $total, 'present' => $present, 'late' => $late, 'absent' => $absent, 'att_prec' => $att_perc, 'pun_perc' => $pun_perc, 'att_class' => $att_class, 'pun_class' => $pun_class);
     }
 
@@ -602,18 +600,14 @@ function summary_data($data, $term = 0)
         foreach ($mis_plugins as $plugin_file) {
         	if (file_exists($plugins.'/'.$plugin_file.".php")) {
 	            require_once($plugins . '/' . $plugin_file . ".php");
-	            // instantiate the object
-	            $class = basename($plugin_file, ".php");
-	            $pluginobj = new $class();
-	            $method = array($pluginobj, 'plugin_type');
-	
-	            //check whether the config_settings method has been defined
-	
-	            if (is_callable($method, true)) {
-	                if ($pluginobj->plugin_type() == 'attendance') {
-	                    $mismisc = $this->dbc->get_mis_plugin_by_name($plugin_file);
-	                    $options[$mismisc->id] = $pluginobj->tab_name();
-	                }
+
+                    if ($plugin_file::plugin_type() == 'attendance') {
+                       // instantiate the object
+                       $class = basename($plugin_file, ".php");
+                       $pluginobj = new $class();
+
+                       $mismisc = $this->dbc->get_mis_plugin_by_name($plugin_file);
+                       $options[$mismisc->id] = $pluginobj->tab_name();
 	            }
         	}
         }
@@ -657,7 +651,7 @@ function summary_data($data, $term = 0)
     }
 
 
-    public function plugin_type()
+    public static function plugin_type()
     {
         return 'overview';
     }

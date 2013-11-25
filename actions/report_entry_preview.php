@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -33,14 +33,14 @@ $dbc = new ilp_db();
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -55,14 +55,14 @@ $PAGE->navbar->add(get_string('blockname', 'block_ilp'),$url,'title');
 $PAGE->navbar->add(get_string('reportconfiguration', 'block_ilp'),$CFG->wwwroot."/blocks/ilp/actions/edit_report_configuration.php",'title');
 
 //get string for create report
-$PAGE->navbar->add(get_string('previewreport', 'block_ilp'),null,'title');
+$PAGE->navbar->add(get_string('createreport', 'block_ilp'),null,'title');
 
 // setup the page title and heading
 $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/report_entry_preview.php', $PARSER->get_params());
 
 $reportfields		=	$dbc->get_report_fields_by_position($report_id);

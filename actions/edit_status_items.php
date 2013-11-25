@@ -1,8 +1,13 @@
 <?php
-require_once('../configpath.php');
+require_once('../lib.php');
 
-global $USER, $CFG, $SESSION, $PARSER;
+$csslink = new moodle_url($CFG->wwwroot.'/blocks/ilp/css/style.css');
+$PAGE->requires->css($csslink);
 
+global $USER, $CFG, $SESSION, $PARSER, $PAGE;
+
+
+$PAGE->set_url($CFG->wwwroot . '/blocks/ilp/actions/edit_status_items.php');
 // Meta includes
 require_once($CFG->dirroot.'/blocks/ilp/admin_actions_includes.php');
 
@@ -65,7 +70,7 @@ if($mform->is_submitted()) {
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $pagetitle = get_string( 'edit_status_items', 'block_ilp' );
 $PAGE->navbar->add($sectionname,null,'title');
@@ -73,7 +78,7 @@ $PAGE->navbar->add($sectionname,null,'title');
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -95,7 +100,7 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_status_items.php', $PARSER->get_params());
 
 require_once($CFG->dirroot.'/blocks/ilp/views/edit_status_items.html');

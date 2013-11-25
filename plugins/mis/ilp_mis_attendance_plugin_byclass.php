@@ -47,7 +47,7 @@ class ilp_mis_attendance_plugin_byclass extends ilp_mis_attendance_plugin
             $this->init_bgcolours();
 
             //set up the flexible table for displaying
-
+            ob_start();
             //instantiate the ilp_ajax_table class
             $flextable = new ilp_mis_ajax_table('attendance_byclass', true, 'ilp_mis_attendance_plugin_byclass_container');
 
@@ -149,8 +149,7 @@ class ilp_mis_attendance_plugin_byclass extends ilp_mis_attendance_plugin
                 }
             }
 
-            ob_start();
-            $flextable->print_html();
+            $flextable->finish_html();
             $pluginoutput = ob_get_contents();
             ob_end_clean();
 
@@ -301,7 +300,7 @@ class ilp_mis_attendance_plugin_byclass extends ilp_mis_attendance_plugin
     }
 
 
-    public function plugin_type()
+    public static function plugin_type()
     {
         return 'attendance';
     }
@@ -537,9 +536,7 @@ class ilp_mis_attendance_plugin_byclass extends ilp_mis_attendance_plugin
 
             $addionalargs = array();
 
-            $addionalargs['sort'] = (get_config('block_ilp', 'mis_plugin_course_byclass_sort')) ? get_config('block_ilp', 'mis_plugin_course_byclass_sort') : "";
-
-            // sort by date time.
+            $addionalargs['sort'] = (get_config('block_ilp', 'mis_plugin_course_byclass_sort')) ? get_config('block_ilp', 'mis_plugin_course_byclass_sort') :  "";
 
 
             //get the users monthly attendance data
@@ -621,7 +618,7 @@ class ilp_mis_attendance_plugin_byclass extends ilp_mis_attendance_plugin
                 if (isset($this->fields['notified'])) $tempdata['notified'] = $d[$this->fields['notified']];
                 if (isset($this->fields['placement'])) $tempdata['placement'] = $d[$this->fields['placement']];
 
-                //fill the couse month array position with percentage for the month
+                //fill the course month array position with percentage for the month
                 $normdata[$dayid][] = $tempdata;
 
             }

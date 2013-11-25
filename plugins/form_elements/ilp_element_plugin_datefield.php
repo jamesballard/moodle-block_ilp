@@ -319,7 +319,7 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
      */
     static function language_strings(&$string) {
         $string['ilp_element_plugin_datefield'] 		        = 'Date field';
-        $string['ilp_element_plugin_datefield_type'] 	        = 'date field';
+        $string['ilp_element_plugin_datefield_type'] 	        = 'Date field';
         $string['ilp_element_plugin_datefield_description'] 	= 'A date field element';
         $string['ilp_element_plugin_datefield_date']            = 'Date';
         $string['ilp_element_plugin_datefield_deadline']        = 'Deadline';
@@ -351,7 +351,9 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
         $fieldname	=	"{$this->reportfield_id}_field";
 
         if (!empty($this->description)) {
-            $mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description),ILP_STRIP_TAGS_DESCRIPTION));
+            $mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description,
+                                                                                                          ENT_QUOTES,
+                                                                                                          'UTF-8'),ILP_STRIP_TAGS_DESCRIPTION));
             $this->label = '';
         }
 
@@ -416,6 +418,26 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
         //count how many times code for creating events should run (once for each calendar selected)
         $loops = $scalendar + $ucalendar;
 
+        $course_id_param = '&course_id=';
+        if (isset($this->course_id)) {
+            $course_id_param .= $this->course_id;
+        }
+
+        $tabitem_param = '';
+        $selectedtab_param = '';
+        $tab_plugins = $this->dbc->get_tab_plugins();
+        if ($tab_plugins) {
+            foreach ($tab_plugins as $tab_plugin) {
+                if ($tab_plugin->name == 'ilp_dashboard_reports_tab') {
+                    break;
+                }
+            }
+            $report_tab_id = $tab_plugin->id;
+            $tabitem_param = '&tabitem=' . $report_tab_id . ':' . $data->report_id;
+            $selectedtab_param = '&selectedtab=' . $report_tab_id;
+        }
+        $ilp_profile_url = $CFG->wwwroot . '/blocks/ilp/actions/view_main.php?user_id=' . $data->user_id . $course_id_param . $tabitem_param . $selectedtab_param;
+        $ilp_profile_link = '<a href="' . $ilp_profile_url . '" class="ilp_cal_profile_link">' . $title . '</a>';
 
       if ($datetype=!0){
         //if event empty (false), create it
@@ -426,7 +448,7 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
                 $event = new stdClass();
                 $event->name        = $title;
                 //link to ilp has been removed due to moodle encoding html and outputing it.
-                $event->description = $title;
+                $event->description = $ilp_profile_link;
                 $event->format      = 0;
                 $event->courseid    = 0;
                 $event->groupid     = 0;
@@ -439,6 +461,7 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
                 $event->timeduration = 0;
                 $event->id = $this->dbc->save_event($event);
 
+                $this->dbc->update_event_description($event, $ilp_profile_link);
                 $record					=	new stdClass();
                 $record->entry_id		=	$entry_id;
                 $record->reportfield_id	=	$reportfield_id;
@@ -477,18 +500,19 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
      */
     public function delete_entry_record($entry_id) {
 
-        $cal_events = $this->dbc-> get_calevent_reportfield_id($entry_id);
+       if($cal_events = $this->dbc-> get_calevent_reportfield_id($entry_id))
+       {
+          $event	=	$this->dbc->get_calendar_events($entry_id, $cal_events->reportfield_id);
 
-
-     $event	=	$this->dbc->get_calendar_events($entry_id, $cal_events->reportfield_id);
-
-        if (!empty($event))	{
-            foreach($event as $ev) {
+          if (!empty($event))	{
+             foreach($event as $ev) {
                 $this->dbc->delete_event_entry($ev->id);
-            }
-        }
-        // call to the parent delete_entry_record to delete an entry record
-        return parent::delete_entry_record($entry_id);
+             }
+          }
+          // call to the parent delete_entry_record to delete an entry record
+          return parent::delete_entry_record($entry_id);
+       }
+       return 0;
     }
 
 
@@ -533,8 +557,9 @@ class ilp_element_plugin_datefield extends ilp_element_plugin {
      * @param int $reportfield_id the id of the reportfield that the entry is attached to
      * @param int $entry_id the id of the entry
      * @param object $entryobj an object that will add parameters to
+     * @param bool returnvalue should a label or value be returned
      */
-    public function view_data( $reportfield_id,$entry_id,&$entryobj ){
+    public function view_data( $reportfield_id,$entry_id,&$entryobj, $returnvalue = false){
 global $CFG;
         $fieldname	=	$reportfield_id."_field";
 
@@ -552,7 +577,9 @@ global $CFG;
                     $img	=	 "<img src='{$CFG->wwwroot}/blocks/ilp/pix/icons/overdue.jpg' alt='' width='32px' height='32px' />";
                 }
             }
-            $entryobj->$fieldname	=	userdate(html_entity_decode($entry->value),'%a %d %B %Y')." ".$img;
+            $entryobj->$fieldname	=	userdate(html_entity_decode($entry->value,
+                                                                      ENT_QUOTES,
+                                                                      'UTF-8'),'%a %d %B %Y')." ".$img;
         }
 
     }

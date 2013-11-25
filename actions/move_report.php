@@ -10,9 +10,9 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
-global $USER, $CFG, $SESSION, $PARSER;
+global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 
 //include any neccessary files
 
@@ -28,12 +28,14 @@ $position = $PARSER->required_param('position' ,PARAM_INT);
 //the id of the reportfield used when editing
 $move = $PARSER->required_param('move' ,PARAM_INT);
 
+$PAGE->set_url($CFG->wwwroot."/blocks/ilp/actions/move_report.php");
+
 // instantiate the db
 $dbc = new ilp_db();
 
 //change field position 
 
-$reports 	= 	$dbc->get_reports_by_position($position,$move);
+$reports 	= 	$dbc->get_reports_by_position($position,$move, true, true, true);
 
 
 $movesuc	=	true;
@@ -41,17 +43,9 @@ $movesuc	=	true;
 //loop through fields returned
 if (!empty($reports)) {
 	foreach($reports as $r) {
-		
-		if ($r->id != $report_id) {
-			//if the field is being moved up all other fields have postion value increased
-			//if the field is being moved down all other fields have postion value decreased 
-			//move up = 1 move down = 0
-			$newposition = (empty($move)) ? $r->position-1 : $r->position+1;
-		} else {
-			//move the field 
-			$newposition = (!empty($move)) ? $r->position- 1 : $r->position+1;
-		}
-		
+
+        $newposition = manage_position($r, $report_id, $move);
+
 		if (!$dbc->set_new_report_position($r->id,$newposition)) $movesuc = false;
 	}
 } else {

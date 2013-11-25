@@ -176,7 +176,9 @@ class ilp_predefined_reports{
             //file_put_contents( $outfile, $this->generate_xml( $report ) );
 			$report_title = $report[ "title" ];
 			$report_description = $report[ "description" ];
-			$report_id = $this->create_report( $report_title, $report_description );
+            $report_type = isset($report[ "type" ]) ? $report[ "type" ] : null;
+
+			$report_id = $this->create_report( $report_title, $report_description, $report_type );
 			if( !empty($report_id )) {
 			//if(1){
 				$info[ 'reportlist' ][] = $report_title;
@@ -374,10 +376,14 @@ class ilp_predefined_reports{
 			,'radio' => 'ilp_element_plugin_rdo'
 			,'html' => 'ilp_element_plugin_html_editor'
 			,'dropdown' => 'ilp_element_plugin_dd'
-			,'date_deadline' => 'ilp_element_plugin_date_deadline'
-			,'date' => 'ilp_element_plugin_date'
+			,'date' => 'ilp_element_plugin_datefield'
 			,'course' => 'ilp_element_plugin_course'
 			,'cat' => 'ilp_element_plugin_category'
+            ,'pagebreak' => 'ilp_element_plugin_page_break'
+            ,'goal' => 'ilp_element_plugin_goal'
+            ,'freehtml' => 'ilp_element_plugin_free_html'
+            ,'file' => 'ilp_element_plugin_file'
+            ,'checkbox' => 'ilp_element_plugin_checkbox'
 		);
 		$plugin_name = false;
 		if( in_array( $element_type, array_keys( $plugin_name_list ) ) ){
@@ -390,6 +396,9 @@ class ilp_predefined_reports{
             catch( exception $e ){
                 exit( $e->getMessage() );
             }
+            if (!$plugin) {
+                echo '<br />' . $plugin_name . ' not found in DB<br />';
+            }
 			return $plugin->id;
 		}
 		return $plugin_name;
@@ -401,7 +410,7 @@ class ilp_predefined_reports{
 	* @param string $description
 	* @return int
 	*/
-	protected function create_report( $name, $description ){
+	protected function create_report( $name, $description, $report_type = null ){
 		//does this report exist already ?
 		//@todo return 0 if report already exists
 		if( $this->report_already_exists( $name ) ){
@@ -415,6 +424,8 @@ class ilp_predefined_reports{
 		$formdata->name = $name;
 		$formdata->description = $description;
 		$formdata->status = 1;
+        $formdata->vault = 0;
+        $formdata->reptype = $report_type;
 		$course_id = 0;	//not necessary for report creation, so just a dummy value
 		$mform	= new edit_report_mform( $course_id, null );
 	    	$report_id = $mform->process_data($formdata);

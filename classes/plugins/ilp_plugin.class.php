@@ -54,17 +54,35 @@ class ilp_plugin {
      * @var int
      */
 	var $plugin_id;
-	
-	var	$dbc;
-	
-	var $xmldb_table;
 
+    /**
+     * @var ilp_db|ilp_db_functions
+     */
+    var	$dbc;
+
+    /**
+     * @var string
+     */
+    var $xmldb_table;
+
+    /**
+     * @var string
+     */
     var $xmldb_field;
 
+    /**
+     * @var string
+     */
     var $xmldb_key;
 
+    /**
+     * @var database_manager
+     */
     var $dbman;
 
+    /**
+     * @var
+     */
     var $set_attributes;
 
     /**
@@ -75,7 +93,7 @@ class ilp_plugin {
 
         
         // include the ilp db
-        require_once($CFG->dirroot.'/blocks/ilp/db/ilp_db.php');
+        require_once($CFG->dirroot.'/blocks/ilp/classes/database/ilp_db.php');
 
         // instantiate the ilp db
         $this->dbc = new ilp_db();
@@ -87,7 +105,6 @@ class ilp_plugin {
 
         $this->dbman = $DB->get_manager();
 
-        // if 2.0 classes are available then use them
         $this->xmldb_table = class_exists('xmldb_table') ? 'xmldb_table' : 'XMLDBTable';
         $this->xmldb_field = class_exists('xmldb_field') ? 'xmldb_field' : 'XMLDBField';
         $this->xmldb_key   = class_exists('xmldb_key')   ? 'xmldb_key'   : 'XMLDBKey';
@@ -225,6 +242,33 @@ class ilp_plugin {
  	 	$mform->addElement('static', "{$elementname}_desc", NULL, $description);
  	 	$mform->setDefault("s_{$elementname}",$value);
  	 }
+
+    /**
+     * @param $mform
+     * @param $elementname
+     * @param $label
+     * @param $description
+     * @param string $defaultvalue
+     */
+    function config_htmleditor_element(&$mform,$elementname,$label,$description,$defaultvalue='') {
+
+        //check if the value is already in the config table
+        $configsetting	=	get_config('block_ilp',$elementname);
+
+        if (empty($configsetting)) {
+            //we need to check if the value is empty because the user set it that way so
+            //we will perform a query to see if the setting exists if it does then we will go
+            //with the config setting, if not set $value to default
+            $settingexists	= $this->dbc->setting_exists($elementname);
+            $value	=	(!empty($settingexists)) ? $configsetting : $defaultvalue;
+        }	else	{
+            $value	=	$configsetting;
+        }
+
+        $mform->addElement('editor',"s_{$elementname}",$label,array('class' => 'form_input'),$value);
+        $mform->addElement('static', "{$elementname}_desc", NULL, $description);
+        $mform->setDefault("s_{$elementname}",array('text'=>$value));
+    }
 	 
  	 
  	  /**
@@ -278,18 +322,26 @@ class ilp_plugin {
  	 	$mform->addElement('static', "{$elementname}_desc", NULL, $description);
  	 	$mform->setDefault("s_{$elementname}",$value);
 	 }
-	 
-	 
-	 
-	 function config_form(&$mform)	{
+
+    /**
+     * @param $mform
+     */
+    function config_form(&$mform)	{
 	 	
 	 }
-	 
-	 function config_save($data)	{
+
+    /**
+     * @param $data
+     * @return bool
+     */
+    function config_save($data)	{
 	 	global $CFG;
-	 	
-	 	
+
 	 	foreach ($data as $name => $value)	{
+            if (is_array($value) && isset($value['text'])) {
+                // HTML editor returns an array with text and format.
+                $value = $value['text'];
+            }
 	 		if ($name != 'saveanddisplaybutton') {
 	 			//removes the s_ from the front of the element name
 				$name	=	substr_replace($name,'',0,2);	 		

@@ -20,6 +20,7 @@ class report_entry_mform extends ilp_moodleform {
 		public 		$user_id;
 		public		$dbc;
         public      $formdata;
+        public   $dontfreeze;
 
 		/**
      	 * TODO comment this
@@ -33,6 +34,7 @@ class report_entry_mform extends ilp_moodleform {
 			$this->user_id		=	$user_id;
 			$this->entry_id		=	$entry_id;
             $this->currentpage  =   $currentpage;
+            $this->canfreeze   =   array();
 
 			$this->dbc			=	new ilp_db();
 
@@ -44,6 +46,10 @@ class report_entry_mform extends ilp_moodleform {
 
 			// call the parent constructor
        	 	parent::__construct("{$CFG->wwwroot}/blocks/ilp/actions/edit_reportentry.php");
+            /*$this->_form->_elements[9]->_attributes = array(
+                'class'=>'123', 'name'=>'345', 'type'=>'hidden'
+            );
+            $this->_form->_elementIndex['345'] = 9;*/
 		}
 
 
@@ -54,7 +60,7 @@ class report_entry_mform extends ilp_moodleform {
 			 global $USER, $CFG;
 
 	         // include the assmgr db
-        	require_once($CFG->dirroot.'/blocks/ilp/db/ilp_db.php');
+        	require_once($CFG->dirroot.'/blocks/ilp/classes/database/ilp_db.php');
 
         	$dbc = new ilp_db;
 
@@ -70,10 +76,10 @@ class report_entry_mform extends ilp_moodleform {
 
 			$title	=	"{$report->name} ".get_string('for','block_ilp')." {$user->firstname} {$user->lastname}";
 			//create a new fieldset
-        	$mform->addElement('html', '<fieldset id="reportfieldset" class="clearfix ilpfieldset">');
+        	$mform->addElement('html', '<fieldset id="reportfieldset" class="clearfix ilpfieldset"><div>');
             $mform->addElement('html', '<legend class="ftoggler">'.$title.'</legend>');
 
-            $desc	=	html_entity_decode($report->description);
+            $desc	=	html_entity_decode($report->description, ENT_QUOTES, 'UTF-8');
 
 			$mform->addElement('html', '<div class="descritivetext">'.$desc.'</div>');
 
@@ -95,7 +101,6 @@ class report_entry_mform extends ilp_moodleform {
             $mform->addElement('hidden', 'page_data',1);
             $mform->setType('page_data', PARAM_INT);
 
-
             if ($count  =   $this->dbc->element_type_exists($this->report_id,'block_ilp_plu_pb')) {
                 $pagebreakcount =   $count;
             }
@@ -104,37 +109,52 @@ class report_entry_mform extends ilp_moodleform {
 
         	if (!empty($reportfields)) {
 
+                $breakcounter = 0;
+                $fieldcounter = 0;
                 foreach ($reportfields as $field) {
 
+                    $fieldcounter ++;
                     //get the plugin record that for the plugin
                     $pluginrecord	=	$dbc->get_plugin_by_id($field->plugin_id);
 
                     //take the name field from the plugin as it will be used to call the instantiate the plugin class
                     $classname = $pluginrecord->name;
 
-
-                    //only show the fields that are on the current page
                     if ($pluginrecord->tablename == 'block_ilp_plu_pb') {
-                        $breaksfound++;
-                        if ($breaksfound    ==  $this->currentpage) break;
+                        if ($breakcounter) {
+                            $mform->addElement('html', '</div>');
+                        }
+                        $breakcounter ++;
+                        $marker = '<div class="hiddenelement pagebreak-marker pagebreak-marker-' . $breakcounter . '">';
+
+                        $mform->addElement('html', $marker);
+                        continue;
+                    }
+                    include_once("{$CFG->dirroot}/blocks/ilp/plugins/form_elements/{$classname}.php");
+
+                    if(!class_exists($classname)) {
+                        print_error('noclassforplugin', 'block_ilp', '', $pluginrecord->name);
                     }
 
-                    if ($breaksfound == $this->currentpage-1)  {
+                    //instantiate the plugin class
+                    $pluginclass	=	new $classname();
 
-                        include_once("{$CFG->dirroot}/blocks/ilp/plugins/form_elements/{$classname}.php");
+                    if (method_exists($pluginclass, 'set_user_id')) {
+                        $pluginclass->set_user_id($this->user_id);
+                    }
 
-                        if(!class_exists($classname)) {
-                            print_error('noclassforplugin', 'block_ilp', '', $pluginrecord->name);
-                        }
+                    $pluginclass->load($field->id);
 
-                        //instantiate the plugin class
-                        $pluginclass	=	new $classname();
+                    //call the plugins entry_form function which will add an instance of the plugin
+                    //to the form
+                    $pluginclass->entry_form($mform);
+                    if (count($reportfields) == $fieldcounter && $breakcounter) {
+                        $mform->addElement('html', '</div>');
+                    }
 
-                        $pluginclass->load($field->id);
-
-                        //call the plugins entry_form function which will add an instance of the plugin
-                        //to the form
-                        $pluginclass->entry_form($mform);
+                    if($classname!='ilp_element_plugin_state')
+                    {
+                       $this->canfreeze[]=$pluginclass->reportfield_id.'_field';
                     }
                 }
 
@@ -143,20 +163,30 @@ class report_entry_mform extends ilp_moodleform {
 //	        $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('submit'));
 //	        $buttonarray[] = &$mform->createElement('cancel');
 
-
-
+            $prev_attrs = array('class'=>'hiddenelement');
             //only show previous if this is not the first page
-            if (!empty($pagebreakcount) && $this->currentpage > 1)    $buttonarray[] = &$mform->createElement('submit', 'previousbutton', get_string('previous','block_ilp'));
-            if (empty($pagebreakcount) || (!empty($pagebreakcount) && $this->currentpage ==  $pagebreakcount+1)) $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('submit'));
+            if (!empty($pagebreakcount))    $buttonarray[] = &$mform->createElement('submit', 'previousbutton', get_string('previous','block_ilp'), $prev_attrs);
+            $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('submit'));
             $buttonarray[] = &$mform->createElement('cancel');
 
             //only show next if this is not the last page
-            if (!empty($pagebreakcount) && $this->currentpage !=  $pagebreakcount+1)    $buttonarray[] = &$mform->createElement('submit', 'nextbutton', get_string('next','block_ilp'));
+            if (!empty($pagebreakcount))    $buttonarray[] = &$mform->createElement('submit', 'nextbutton', get_string('next','block_ilp'));
 
             $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
             //close the fieldset
-	        $mform->addElement('html', '</fieldset>');
+	        $mform->addElement('html', '</div></fieldset>');
 		}
+
+//The form represents a report which has passed its editing deadline.
+//Freeze all the visible forms except "state" drop downs.
+        function expired()
+        {
+           $mform =& $this->_form;
+           foreach($this->canfreeze as $f)
+           {
+              $mform->freeze($f);
+           }
+        }
 
 
 		/**
@@ -229,6 +259,10 @@ class report_entry_mform extends ilp_moodleform {
 
 				//call the plugins entry_form function which will add an instance of the plugin
 				//to the form
+                if (method_exists($pluginclass, 'set_course_id')) {
+                    $pluginclass->set_course_id($course_id);
+                }
+
 				if ($pluginclass->is_processable())	{
 					if (!$pluginclass->entry_process_data($field->id,$entry_id,$data)) $result = false;
 				}

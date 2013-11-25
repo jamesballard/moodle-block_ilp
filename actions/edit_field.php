@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -32,20 +32,20 @@ $reportfield_id = $PARSER->optional_param('reportfield_id',null ,PARAM_INT);
 // instantiate the db
 $dbc = new ilp_db();
 
-
+$report_details = $dbc->get_report_by_id($report_id);
 
 // setup the navigation breadcrumbs
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -59,10 +59,12 @@ $PAGE->navbar->add(get_string('blockname', 'block_ilp'),$url,'title');
 //section name
 $PAGE->navbar->add(get_string('reportconfiguration', 'block_ilp'),$CFG->wwwroot."/blocks/ilp/actions/edit_report_configuration.php",'title');
 
+$PAGE->navbar->add($report_details->name, $CFG->wwwroot . '/blocks/ilp/actions/edit_prompt.php?report_id=' . $report_id,'report_name');
+
 //get string for create report
 $PAGE->navbar->add(get_string('reportfields', 'block_ilp'),null,'title');
 
-$pagetitle	=	(!empty($reportfield_id)) ? get_string('editfield','block_ilp') : get_string('addfield','block_ilp');
+$pagetitle	=	get_string('addfield','block_ilp');
 
 //get string for page
 $PAGE->navbar->add($pagetitle,null,'title');
@@ -72,7 +74,7 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_field.php', $PARSER->get_params());
 
 //get the plugin record that for the plugin 

@@ -67,13 +67,13 @@ class ilp_ajax_table extends ilp_flexible_table {
      * @todo Document properly
      */
     function __construct($uniqueid, $displayperpage=true) {
-        global $CFG, $SESSION;
+        global $CFG, $SESSION, $DB, $USER;
 
 
         $this->uniqueid = $uniqueid;
         $this->displayperpage = $displayperpage;
         $hozsize = get_config('block_ilp', 'defaulthozsize');
-        $pagesize = get_config('block_ilp', 'defaultverticalperpage');
+        $this->pagesize = get_config('block_ilp', 'display');
         $this->request = array(
             ILP_TABLE_VAR_SORT      => 'tsort',
             ILP_TABLE_VAR_HIDE      => 'thide',
@@ -87,13 +87,13 @@ class ilp_ajax_table extends ilp_flexible_table {
         );
 
         // include and instantiate the db class
-        require_once($CFG->dirroot."/blocks/ilp/db/ilp_db.php");
+        require_once($CFG->dirroot."/blocks/ilp/classes/database/ilp_db.php");
         $this->dbc = new ilp_db();
 
         if (!isset($SESSION->flextable)) {
             $SESSION->flextable = array();
         }
-
+        // if session is not set for the flex table, then need to set.
         if(!isset($SESSION->flextable[$this->uniqueid])) {
             $SESSION->flextable[$this->uniqueid] = new stdClass;
             $SESSION->flextable[$this->uniqueid]->uniqueid = $this->uniqueid;
@@ -105,6 +105,18 @@ class ilp_ajax_table extends ilp_flexible_table {
             $SESSION->flextable[$this->uniqueid]->currpage = $this->currpage;
             $SESSION->flextable[$this->uniqueid]->currhoz  = $this->currhoz;
             $SESSION->flextable[$this->uniqueid]->filters  = $this->filters;
+            // now let's load the hidden column info from db
+
+            $existing_data = $DB->get_record_select('block_ilp_user_choice',
+                                                    "user_id = :user_id AND ".$DB->sql_compare_text('element_id').' = :element_id',
+                                                    array('user_id' => $USER->id, 'element_id' => $uniqueid));
+            if($existing_data){
+                //load them
+                $user_choice = explode(',',$existing_data->choice);
+                foreach($user_choice as $choice){
+                    $SESSION->flextable[$this->uniqueid]->collapse[$choice] = true;
+                }
+            }
         }
 
         
@@ -198,7 +210,7 @@ class ilp_ajax_table extends ilp_flexible_table {
      * @return type?
      */
     function setup() {
-        global $SESSION, $CFG;
+        global $SESSION, $CFG, $DB, $USER;
 
         if(empty($this->columns) || empty($this->uniqueid)) {
             return false;
@@ -233,6 +245,37 @@ class ilp_ajax_table extends ilp_flexible_table {
                     unset($this->sess->sortby[$_GET[$this->uniqueid][$this->request[ILP_TABLE_VAR_HIDE]]]);
                 }
             }
+        }
+
+        //save the latest changes to db for later use
+        $user_choice = array();
+        //$my_table = $SESSION->flextable;
+        $data = new stdClass();
+        $data->user_id = $USER->id;
+        $data->element_id = $this->uniqueid;
+        $data->modified = time();
+
+        foreach($this->sess->collapse as $key=>$value){
+            if($value == true){
+                $user_choice[] = $key;
+            }
+        }
+
+        if($user_choice){
+            $data->choice = implode(',',$user_choice);
+        }else{
+            $data->choice = '';
+        }
+
+        $existing_data = $DB->get_record_select('block_ilp_user_choice',
+                                                "user_id = :user_id and ".$DB->sql_compare_text('element_id').' = :element_id',
+                                                array('user_id' => $USER->id, 'element_id' => $data->element_id));
+
+        if($existing_data){
+            $data->id = $existing_data->id;
+            $DB->update_record('block_ilp_user_choice', $data);
+        }else {
+            $DB->insert_record('block_ilp_user_choice',$data);
         }
         
         // Now, update the column attributes for collapsed columns
@@ -331,7 +374,9 @@ class ilp_ajax_table extends ilp_flexible_table {
         $this->setup = true;
 
     /// Always introduce the "flexible" class for the table if not specified
+        // added header class instead of flexible
     /// No attributes, add flexible class
+
         if (empty($this->attributes)) {
             $this->attributes['class'] = 'flexible';
     /// No classes, add flexible class
@@ -339,7 +384,7 @@ class ilp_ajax_table extends ilp_flexible_table {
             $this->attributes['class'] = 'flexible';
     /// No flexible class in passed classes, add flexible class
         } else if (!in_array('flexible', explode(' ', $this->attributes['class']))) {
-            $this->attributes['class'] = trim('flexible ' . $this->attributes['class']);
+            $this->attributes['class'] = trim('flexible' . $this->attributes['class']);
         }
 
     }
@@ -495,12 +540,12 @@ class ilp_ajax_table extends ilp_flexible_table {
     }
 
     /**
-     * Prints a single row of the table
+     * Prints two rows of a table one show and the second hidden
      *
      * @param object $row One row from the DB results object
      * @param string $classname An optional CSS class for the row
      */
-    function print_row($row, $classname = '',$onclick = null) {
+    function print_row($row, $classname = '',$onclick = null,$hiddendata=null) {
 
         static $suppress_lastrow = NULL;
         static $oddeven = 1;
@@ -511,7 +556,7 @@ class ilp_ajax_table extends ilp_flexible_table {
             $rowclasses[] = $classname;
         }
 
-       $onclickevent =  (!empty($onclick)) ? ' onclick="'.$onclick.'" ' : '';
+        $onclickevent =  (!empty($onclick)) ? ' onclick="'.$onclick.'" ' : '';
 
         echo '<tr  class="' . implode(' ', $rowclasses) . '">';
 
@@ -540,6 +585,19 @@ class ilp_ajax_table extends ilp_flexible_table {
         }
 
         echo '</tr>';
+
+        if (!empty($hiddendata)) {
+            //the hidden row
+            echo '<tr  class="' . implode(' ', $rowclasses) . '">';
+
+            $colcount = count($this->columns);
+            foreach ($hiddendata as $index => $data) {
+                echo '<td colspan="'.$colcount.'">';
+                echo $data;
+                echo '</td>';
+            }
+            echo "</tr>";
+        }
 
         $suppress_enabled = array_sum($this->column_suppress);
         if ($suppress_enabled) {

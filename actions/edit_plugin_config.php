@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -44,14 +44,13 @@ $dbc = new ilp_db();
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
-
+$sectionname	=	get_string('administrationsite');
 $PAGE->navbar->add($sectionname,null,'title');
 
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -63,7 +62,13 @@ $url	=	$CFG->wwwroot."/admin/settings.php?section=blocksettingilp";
 $PAGE->navbar->add(get_string('blockname', 'block_ilp'),$url,'title');
 
 //section name
-$PAGE->navbar->add(get_string('pluginconfig', 'block_ilp'),$CFG->wwwroot."/blocks/ilp/actions/edit_plugin_config.php?pluginnane={$pluginname}&plugintype={$plugintype}",'title');
+
+if (get_string_manager()->string_exists($pluginname . '_pluginnamesettings', 'block_ilp')) {
+    $pageheading = get_string($pluginname . '_pluginnamesettings', 'block_ilp');
+} else {
+    $pageheading = get_string('pluginconfig', 'block_ilp');
+}
+$PAGE->navbar->add($pageheading,$CFG->wwwroot."/blocks/ilp/actions/edit_plugin_config.php?pluginnane={$pluginname}&plugintype={$plugintype}",'title');
 
 
 // setup the page title and heading
@@ -71,7 +76,7 @@ $PAGE->navbar->add(get_string('pluginconfig', 'block_ilp'),$CFG->wwwroot."/block
 //$PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 //$PAGE->set_heading($SITE->fullname);
 //$PAGE->set_pagetype('ilp-configuration');
-//$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_plugin_config.php', $PARSER->get_params());
 
 //instantiate the plugin config mform

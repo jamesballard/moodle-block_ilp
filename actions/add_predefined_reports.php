@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -28,21 +28,24 @@ require_once($CFG->dirroot.'/blocks/ilp/classes/predefined_reports.class.php');
 // instantiate the db
 $dbc = new ilp_db();
 
-
+if(!$dbc->ilp_admin())
+{
+    print_error(get_string('nopermission'));
+}
 
 
 // setup the navigation breadcrumbs
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -62,7 +65,7 @@ $PAGE->navbar->add(get_string('predefinedreports', 'block_ilp'),$CFG->wwwroot."/
 //$PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 //$PAGE->set_heading($SITE->fullname);
 //$PAGE->set_pagetype('ilp-configuration');
-//$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/add_predefined_report.php', $PARSER->get_params());
 
 $p = new ilp_predefined_reports();

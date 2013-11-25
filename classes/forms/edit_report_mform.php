@@ -39,13 +39,13 @@ class edit_report_mform extends ilp_moodleform {
         	$dbc = new ilp_db;
 
         	$mform =& $this->_form;
-        	
+
         	$fieldsettitle = (!empty($this->report_id)) ? get_string('editreport', 'block_ilp') : get_string('createreport', 'block_ilp');
         	
         	//create a new fieldset
-        	$mform->addElement('html', '<fieldset id="reportfieldset" class="clearfix ilpfieldset">');
+        	$mform->addElement('html', '<fieldset id="reportfieldset" class="clearfix ilpfieldset"><div>');
            $mform->addElement('html', '<legend >'.$fieldsettitle.'</legend>');
-        	
+
         	$mform->addElement('hidden', 'id');
         	$mform->setType('id', PARAM_INT);
         	
@@ -85,23 +85,24 @@ class edit_report_mform extends ilp_moodleform {
             $mform->setType('description', PARAM_RAW);
 
             //TODO add the elements to implement the frequency functionlaity
-          if (stripos($CFG->release,"2.") !== false) {
-                $mform->addElement('filepicker', 'binary_icon',get_string('binary_icon', 'block_ilp'), null, array('maxbytes' => ILP_MAXFILE_SIZE, 'accepted_types' => ILP_ICON_TYPES));
-            } else {
-                $this->set_upload_manager(new upload_manager('binary_icon', false, false, 0, false, ILP_MAXFILE_SIZE, true, true, false));
-                $mform->addElement('file', 'binary_icon', get_string('binary_icon', 'block_ilp'));
-            }
 
+            $mform->addElement('filepicker', 'binary_icon',get_string('binary_icon', 'block_ilp'), null, array('maxbytes' => ILP_MAXFILE_SIZE, 'accepted_types' => ILP_ICON_TYPES));
 
 	        $mform->addElement('checkbox', 'maxedit',get_String('maxedit','block_ilp'),null);
 	        
 	        $mform->addElement('checkbox', 'comments',get_String('allowcomments','block_ilp'),null);
-	        
-	       	$mform->addElement('checkbox', 'frequency', get_String('multipleentries','block_ilp'),null);
 
             $mform->addElement('html', '<noscript>');
             $mform->addElement('html', get_string('reportnojs','block_ilp'));
             $mform->addElement('html', '</noscript>');
+
+            // maximum entries element
+            $mform->addElement(
+                'text',
+                'reportmaxentries',
+                get_string('maxentries', 'block_ilp'),
+                array('class' => 'form_input')
+            );
 
             $radioarray[]   =&  $mform->createElement( 'radio', 'reptype', '', get_string('openend','block_ilp'), 1);
             $radioarray[]   =&  $mform->createElement( 'radio', 'reptype', '',get_string('finaldate','block_ilp') , 2);
@@ -118,16 +119,7 @@ class edit_report_mform extends ilp_moodleform {
 
             $mform->addRule('reptype', null, 'required', null, 'client');
 
-            $mform->addElement('advcheckbox', 'recurrent', get_string('reportrecurrence','block_ilp'),null,null,array(0,1));
-
-            // maximum entries element
-            $mform->addElement(
-                'text',
-                'reportmaxentries',
-                get_string('maxentries', 'block_ilp'),
-                array('class' => 'form_input')
-            );
-
+            $mform->setType('reportmaxentries', PARAM_INT);
 
             //specific date selector
             $mform->addElement(
@@ -138,6 +130,10 @@ class edit_report_mform extends ilp_moodleform {
                 array('class' => 'lockdate')
             );
 
+
+            $mform->addElement('checkbox', 'frequency', get_String('multipleentries','block_ilp'),null);
+
+            $mform->addElement('advcheckbox', 'recurrent', get_string('reportrecurrence','block_ilp'),null,null,array(0,1));
 
             $mform->addElement('html', '<fieldset id="recurringfieldset" class="ilpfieldset">');
             $mform->addElement('html', '<legend >'.get_string('recurringrules','block_ilp').'</legend>');
@@ -171,7 +167,7 @@ class edit_report_mform extends ilp_moodleform {
                 get_string('recurringmax', 'block_ilp'),
                 array('class' => 'recurring')
             );
-
+            $mform->setType('recurmax', PARAM_INT);
             $radioarray         =   array();
             $radioarray[]       =&  $mform->createElement( 'radio', 'recurstart', '', get_string('reportcreation','block_ilp'), ILP_RECURRING_REPORTCREATION ,array('class'=>'recurring')); ;
             $radioarray[]       =&  $mform->createElement( 'radio', 'recurstart', '', get_string('firstentry','block_ilp') , ILP_RECURRING_FIRSTENTRY ,array('class'=>'recurring'));
@@ -221,11 +217,11 @@ class edit_report_mform extends ilp_moodleform {
 
 	        $buttonarray[] = $mform->createElement('submit', 'saveanddisplaybutton', get_string('submit'));
 	        $buttonarray[] = &$mform->createElement('cancel');
-	        
+
 	        $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
-	        
+
 	        //close the fieldset
-	        $mform->addElement('html', '</fieldset>');
+	        $mform->addElement('html', '</div></fieldset>');
 		}
 
 
@@ -290,16 +286,7 @@ class edit_report_mform extends ilp_moodleform {
             }
 
 
-			if (empty($data->id)) {
-				
-				if (!empty($data->binary_icon)) {
-					//moodle 1.9 doesnt add slashes so we need to do this
-					if (stripos($CFG->release,"2.") === false) {
-						$data->binary_icon = addslashes($data->binary_icon);
-					}
-				}
-
-
+            if (empty($data->id)) {
 
             	$data->id = $this->dbc->create_report($data);
             	
@@ -352,12 +339,6 @@ class edit_report_mform extends ilp_moodleform {
 				//any data that is currently present from being overwritten
 				if (empty($data->binary_icon)) unset($data->binary_icon); 
 
-				if (!empty($data->binary_icon)) {
-					//moodle 1.9 doesnt add slashes so we need to do this
-					if (stripos($CFG->release,"2.") === false) {
-						$data->binary_icon = addslashes($data->binary_icon);
-					}
-				}
 				
             	$this->dbc->update_report($data);
         	}

@@ -8,12 +8,8 @@
  * @version 2.0
  */
 
-var editicon	= Y.one('#edit_userstatus_icon');
-var userstatus 	= Y.one('#user_status');
-
-
 M.ilp_dashboard_student_info = {
-		
+
         /**
          * When the edit icon is clicked, this will unhide the select thing and show the current DB grade.
          * Needs to use two rules as some elements are hidden to start with and others are visible, so we need
@@ -21,8 +17,10 @@ M.ilp_dashboard_student_info = {
          */
         showelement : function(element) {
             ele     =   Y.one('#'+element);
-            ele.removeClass('hiddenelement');
-            ele.addClass('visbileelement');
+            if (ele) {
+                ele.removeClass('hiddenelement');
+                ele.addClass('visbileelement');
+            }
         },
 
         /**
@@ -31,11 +29,13 @@ M.ilp_dashboard_student_info = {
          */
         hideelement : function(element) {
             ele     =   Y.one('#'+element);
-            ele.removeClass('visbileelement');
-            ele.addClass('hiddenelement');
+            if (ele) {
+                ele.removeClass('visbileelement');
+                ele.addClass('hiddenelement');
+            }
         },
-		
-        
+
+
         save_userstatus : function () {
 
             sidelement  = Y.one('#student_id');
@@ -59,7 +59,30 @@ M.ilp_dashboard_student_info = {
 
             ajaxinprogress = true;
         },
-        
+        save_usersecondstatus : function () {
+            var sidelement  = Y.one('#student_id');
+            var student_id  =   sidelement.get('value');
+            var select_userstatus  = Y.one('#select_usersecondstatus');
+            var statusvalue  =   select_userstatus.get('value');
+            if (statusvalue) {
+                M.ilp_dashboard_student_info.showelement('secondstsloadingicon');
+
+                var cfg	=	{
+                    on: {
+                        success: function(id,o,args) {
+                            var response = Y.JSON.parse(o.responseText);
+                            Y.all('.ilp_element_plugin_warningstatus').setHTML(response);
+                            M.ilp_dashboard_student_info.hideelement('secondstsloadingicon');
+                        }
+                    },
+                    data:   'student_id=' + student_id + '&secondstatus_val='+statusvalue,
+                    context: M.ilp_dashboard_student_info.callback
+                };
+
+                Y.io('save_secondstatus.ajax.php',cfg);
+            }
+        },
+
         addselect : function () {
 
             M.ilp_dashboard_student_info.hideelement('edit_userstatus_icon');
@@ -69,47 +92,35 @@ M.ilp_dashboard_student_info = {
             var studentstatussub    = Y.one('#studentstatussub');
             studentstatussub.setStyle('visibility','hidden');
         },
-        
+
         callback	:	{
         	success : function(id,o,args) {
-                //set the status to the new status
-                var statusdiv			=	Y.one('#user_status');
-
-
-                data    =   Y.JSON.parse(o.responseText);
-                statusdiv.setHTML(data.status);
-                statusdiv.setStyle('color',data.colour);
-
-                //show and hide the relevant elements
-        		M.ilp_dashboard_student_info.showelement('user_status');
-        		M.ilp_dashboard_student_info.showelement('edit_userstatus_icon');
-        		M.ilp_dashboard_student_info.hideelement('select_userstatus');
+                var response = Y.JSON.parse(o.responseText);
+                Y.one('.ajaxstatuschange_wrapper').setHTML(response.middle_studentinfo_block);
                 M.ilp_dashboard_student_info.hideelement('studentlistloadingicon');
+                M.ilp_dashboard_student_info.init(Y);
         	},
-        	
+
         	failure : function() {
-        		
+
         	}
         }
 
+}
 
 
-}   	
-
- 
 M.ilp_dashboard_student_info.init = function(Y,statusval) {
 	//hide select and submit button 
 
     M.ilp_dashboard_student_info.hideelement('studentstatussub');
-    
-    M.ilp_dashboard_student_info.showelement('user_status');
-    M.ilp_dashboard_student_info.showelement('edit_userstatus_icon');
-    
-    M.ilp_dashboard_student_info.hideelement('select_userstatus');
+    var select_userstatus = Y.one('select#select_userstatus');
+    if (select_userstatus) {
+        select_userstatus.on('change',function () {M.ilp_dashboard_student_info.save_userstatus()},'#select_userstatus' );
+    }
 
-    Y.on('click',function () {M.ilp_dashboard_student_info.addselect()},'#edit_userstatus_icon' );
-    Y.on('change',function () {M.ilp_dashboard_student_info.save_userstatus()},'#select_userstatus' );
+    var select_usersecondstatus = Y.one('select#select_usersecondstatus');
+    if (select_usersecondstatus) {
+        select_usersecondstatus.on('change',function () {M.ilp_dashboard_student_info.save_usersecondstatus()},'#select_usersecondstatus' );
+    }
 
 };
-
-

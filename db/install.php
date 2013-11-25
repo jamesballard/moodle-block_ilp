@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * Carries out functions needed after installation
  *
@@ -11,16 +11,17 @@
 
 
 function xmldb_block_ilp_install() {
+
 global $USER, $CFG, $SESSION, $PARSER;
 
 
 		// include the ilp db
-        require_once($CFG->dirroot.'/blocks/ilp/db/ilp_db.php');
+        require_once($CFG->dirroot.'/blocks/ilp/classes/database/ilp_db.php');
 		
 		// instantiate the db
 		$dbc = new ilp_db();
 		
-		//install the various plugins and templates into the database
+//install the various plugins and templates into the database
 		
 		require_once ($CFG->dirroot.'/blocks/ilp/classes/plugins/ilp_element_plugin.class.php');
 
@@ -40,29 +41,29 @@ global $USER, $CFG, $SESSION, $PARSER;
 		//install new tabs
 		ilp_dashboard_tab::install_new_plugins();
 		
-		//create relationships betweendashboard plugins and template regions
+//create relationships betweendashboard plugins and template regions
 		
-		//get the enabled template should be the default temmplate at this stage
-		$enabled_template	=	$dbc->get_enabled_template();
+	//get the enabled template should be the default temmplate at this stage
+	$enabled_template	=	$dbc->get_enabled_template();
 		
 		$regions			=	$dbc->get_template_regions($enabled_template->id);
 
 		$region_plugins	= array();
 		
-		//create the association between the plugin and the first region
+	//create the association between the plugin and the first region
 		$plugin				=	$dbc->get_dashboard_plugin_by_name('ilp_dashboard_student_info_plugin');
-		$rp					=	new	stdClass();
+$rp					=	new	stdClass();
 		$rp->plugin_id 		= $plugin->id;
 		
 		$region_plugins[]	=	$rp;
 		
 		$plugin				=	$dbc->get_dashboard_plugin_by_name('ilp_dashboard_main_plugin');
-		$rp					=	new	stdClass();
+$rp					=	new	stdClass();
 		$rp->plugin_id 		= $plugin->id;	
 		
 		$region_plugins[]	=	$rp;
 		
-		//loop through the regions and assign the region to a plugin 
+	//loop through the regions and assign the region to a plugin 
 		$i	=	0;
 		foreach($regions as $r) {
 			$region_plugins[$i]->region_id	=	$r->id;
@@ -85,9 +86,14 @@ global $USER, $CFG, $SESSION, $PARSER;
 			$si->value		=	$key;
 			$si->passfail	=	$passfail;
 			$si->parent_id	=	$id;
+            $si->icon       =   '';
+            $si->display_option = 'text';
+            $si->description    = '';
+            $si->bg_colour      = '#ffffff';
 			
 			$dbc->create_plugin_record('block_ilp_plu_sts_items',$si);
 		}
+
 }
 
 

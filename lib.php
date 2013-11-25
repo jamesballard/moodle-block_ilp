@@ -9,7 +9,23 @@
  * @version 2.0
  */
 
+require_once(__DIR__.'/../../config.php');
+require_once($CFG->dirroot.'/blocks/ilp/libs/actionslib.php');
+require_once($CFG->dirroot.'/blocks/ilp/libs/classeslib.php');
 
+//include the ilp parser class
+require_once($CFG->dirroot.'/blocks/ilp/classes/ilp_parser.class.php');
+
+//include ilp db class
+require_once($CFG->dirroot.'/blocks/ilp/classes/database/ilp_db.php');
+
+require_once($CFG->dirroot."/blocks/ilp/classes/ilp_formslib.class.php");
+
+//include the library file
+require_once($CFG->dirroot.'/blocks/ilp/lib.php');
+
+//include the static constants
+require_once($CFG->dirroot.'/blocks/ilp/constants.php');
 
 function var_crap($var,$header="") {
 	echo "<pre> {$header} <br />";
@@ -18,20 +34,71 @@ function var_crap($var,$header="") {
 	
 }
 
+function ilp_autoloader( $classname )
+{
+    global $CFG;
+    if (!class_exists($classname)) {
+        $nopattern_associations = array (
+          'ilp_db' => '/classes/database/ilp_db.php',
+          'ilp_mis_connection' => '/classes/database/ilp_mis_connection.php',
+        );
+        if (isset($nopattern_associations[$classname])) {
+            require_once $CFG->dirroot . '/blocks/ilp' . $nopattern_associations[$classname];
+            return true;
+        } else {
+            $classname_sections = explode('_', $classname);
+            $firstsec = $classname_sections[0];
+            $num_secs = count($classname_sections);
+            $lastsec = $classname_sections[$num_secs - 1];
+            $subfolder = '/';
+            $class_suffix = '.class';
+            switch ($lastsec) {
+                case 'mform':
+                    if (strpos($classname, 'ilp_element_plugin') === 0) {
+                        // If classname begins with 'ilp_element_plugin'
+                        $subfolder = '/classes/forms/element_plugins/';
+                    } else {
+                        $subfolder = '/classes/forms/';
+                    }
+                    $class_suffix = '';
+                    break;
+                case 'table':
+                    $subfolder = '/classes/tables/';
+                    break;
+                default:
+                    break;
+            }
+            $filename = $CFG->dirroot . '/blocks/ilp' . $subfolder . $classname . $class_suffix . '.php';
+            if (file_exists($filename)) {
+                require_once $filename;
+            }
+        }
+    }
+
+}
+spl_autoload_register( 'ilp_autoloader' );
+
+/*
+ * Prints object to a file ** WARNING ** This will overwrite any files with the same name in moodle/local/
+ */
+function print_ob_to_localfile($object_toprint, $filename = 'testFile.txt') {
+    global $CFG;
+    $myFile = $CFG->dirroot . "/local/" . $filename;
+    $fh = fopen($myFile, 'w') or die("can't open file");
+    ob_start();
+    print_object($object_toprint);
+    $stringData = ob_get_clean();
+    fwrite($fh, $stringData);
+    fclose($fh);
+}
+
 /**
  * Test whether the id is that of an admin user
  *
  * @return bool true or false
  */
 function ilp_is_siteadmin($userid) {
-    global $CFG;
-
-    if (stripos($CFG->release,"2.") !== false) {
-        return is_siteadmin($userid);
-    } else {
-        $sitecontext = get_context_instance(CONTEXT_SYSTEM);
-        return has_capability('moodle/site:doanything',$sitecontext);
-    }
+    return is_siteadmin($userid);
 }
 
 
@@ -286,6 +353,7 @@ function returnNextPosition($takenPos)   {
     return  $i;
 }
 
+//This is for form elements
 function ilp_pluginfile($context, $filearea, $args, $forcedownload) {
 
     if ($context->contextlevel != CONTEXT_SYSTEM) {
@@ -312,4 +380,40 @@ function ilp_pluginfile($context, $filearea, $args, $forcedownload) {
     send_stored_file($file, 60*60, 0, $forcedownload);
 }
 
-?>
+//This is for block-wide resources
+function block_ilp_pluginfile($course,$birecord,$context, $filearea, $args, $forcedownload) {
+
+    if ($context->contextlevel != CONTEXT_SYSTEM) {
+        send_file_not_found();
+    }
+
+    require_login();
+
+    $fs = get_file_storage();
+
+    $filename = array_pop($args);
+    $itemid   = array_pop($args);
+    $filepath = $args ? '/'.implode('/', $args).'/' : '/';
+
+    if (!$file = $fs->get_file($context->id, 'block_ilp', $filearea, $itemid, $filepath, $filename) or $file->is_directory()) {
+        send_file_not_found();
+    }
+
+    session_get_instance()->write_close();
+    send_stored_file($file, 60*60, 0, $forcedownload);
+}
+
+function ilp_get_status_icon($iconid)
+{
+   $context=context_system::instance();
+   $fs = get_file_storage();
+
+   foreach($fs->get_area_files($context->id, 'block_ilp', 'icon', $iconid) as $file)
+   {
+      if(!$file->is_directory())
+      {
+         return $file->get_filename();
+      }
+   }
+   return '';
+}

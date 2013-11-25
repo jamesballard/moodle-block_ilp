@@ -10,9 +10,9 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
-global $USER, $CFG, $SESSION, $PARSER;
+global $USER, $CFG, $SESSION, $PARSER, $PAGE;
 
 //include any neccessary files
 
@@ -24,9 +24,9 @@ require_once($CFG->dirroot.'/blocks/ilp/classes/forms/edit_report_mform.php');
 
 
 //if set get the id of the report to be edited
-$report_id	= $PARSER->optional_param('report_id',NULL,PARAM_INT);	
+$report_id	= $PARSER->optional_param('report_id',NULL,PARAM_INT);
 
-
+$PAGE->set_url($CFG->wwwroot . '/blocks/ilp/actions/edit_report.php?report_id=' . $report_id);
 // instantiate the db
 $dbc = new ilp_db();
 
@@ -63,6 +63,10 @@ if($mform->is_submitted()) {
     	$formdata->comments		=	(empty($formdata->comments)) ? 0 : $formdata->comments;
     	
     	$formdata->frequency	=	(empty($formdata->frequency)) ? 0 : $formdata->frequency;
+
+        if (!isset($formdata->vault)) {
+            $formdata->vault = 0;
+        }
     	
         // process the data
     	$success = $mform->process_data($formdata);
@@ -121,13 +125,13 @@ if (!empty($report_id)) {
 
 //siteadmin or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('administrationsite') : get_string('administration');
+$sectionname	=	get_string('administrationsite');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
 //plugins or modules
 //we need to determine which moodle we are in and give the correct area name
-$sectionname	=	(stripos($CFG->release,"2.") !== false) ? get_string('plugins','admin') : get_string('managemodules');
+$sectionname	=	get_string('plugins','admin');
 
 $PAGE->navbar->add($sectionname,null,'title');
 
@@ -151,7 +155,7 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_report.php', $PARSER->get_params());
 
 

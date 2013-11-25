@@ -9,19 +9,16 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
-global $USER, $CFG, $SESSION, $PARSER, $PAGE;
+global $USER, $CFG, $SESSION, $PARSER, $PAGE, $DB;
 
 //include any neccessary files
 
 // Meta includes
 require_once($CFG->dirroot.'/blocks/ilp/actions_includes.php');
 
-// Include the report permissions file
-require_once($CFG->dirroot.'/blocks/ilp/report_permissions.php');
-
-//if set get the id of the report 
+//if set get the id of the report
 $report_id	= $PARSER->required_param('report_id',PARAM_INT);	
 
 //get the id of the user that the comment relates to
@@ -49,6 +46,10 @@ $dbc = new ilp_db();
 
 //get the report 
 $report		=	$dbc->get_report_by_id($report_id);
+
+$access_report_addcomment = $report->has_cap($USER->id,$PAGE->context,'block/ilp:addcomment');
+$access_report_editcomment = $report->has_cap($USER->id,$PAGE->context,'block/ilp:editcomment');
+$access_viewotherilp = $report->has_cap($USER->id,$PAGE->context,'block/ilp:viewotherilp');
 
 //if the report is not found throw an error of if the report has a status of disabled
 if (empty($report) || empty($report->status)) {
@@ -86,7 +87,27 @@ if (empty($report->comments))	{
 //require the entrycomment_mform so we can display the report
 require_once($CFG->dirroot.'/blocks/ilp/classes/forms/edit_entrycomment_mform.php');
 
+
 $mform	= new	edit_entrycomment_mform($report_id,$entry_id,$user_id,$course_id,$comment_id,$selectedtab,$tabitem);
+/*
+if (!empty($comment_id)) {
+
+    $comment	=	$dbc->get_comment_by_id($comment_id);
+    //var_dump($comment);
+    if (!empty($comment)) {
+        //only the creator has the right to edit
+        if ($comment->creator_id == $USER->id) {
+            //set the form values to the current comment
+            $mform->set_data($comment);
+        } else {
+            print_error('commentmayonlybeeditedbyowner','block_ilp');
+        }
+    } else {
+        print_error('commentnotfound','block_ilp');
+    }
+}
+*/
+
 
 //was the form cancelled?
 if ($mform->is_cancelled()) {
@@ -132,12 +153,8 @@ if($mform->is_submitted()) {
                 $message->contexturl        =   $CFG->wwwroot."/blocks/ilp/actions/view_main.php?user_id={$entry->user_id}&course_id={$course_id}{$reportstaburl}";
                 $message->contexturlname    =   get_string('viewreport','block_ilp');
 
-                if (stripos($CFG->release,"2.") !== false) {
-                    message_send($message);
-                }   else {
-                    require_once($CFG->dirroot.'/message/lib.php');
-                    message_post_message($message->userfrom, $message->userto,$message->fullmessage,$message->fullmessageformat,'direct');
-                }
+                message_send($message);
+
             }
 
             $return_url = $CFG->wwwroot."/blocks/ilp/actions/view_main.php?user_id={$user_id}&selectedtab={$selectedtab}&tabitem={$tabitem}&course_id={$course_id}";
@@ -147,29 +164,12 @@ if($mform->is_submitted()) {
 }
 
 
-if (!empty($comment_id)) {
-	
-	$comment	=	$dbc->get_comment_by_id($comment_id);
-	
-	if (!empty($comment)) {
-		//only the creator has the right to edit
-		if ($comment->creator_id == $USER->id) {
-			//set the form values to the current comment
-			$mform->set_data($comment);
-		} else {
-			print_error('commentmayonlybeeditedbyowner','block_ilp');
-		}
-	} else {
-		print_error('commentnotfound','block_ilp');
-	}
-}
-
 $plpuser	=	$dbc->get_user_by_id($user_id);
 
 
 $dashboardurl	=	$CFG->wwwroot."/blocks/ilp/actions/view_main.php?user_id={$user_id}&course_id={$course_id}";
 
-$userprofileurl	=	(stripos($CFG->release,"2.") === false) ? $CFG->wwwroot."/user/view.php?id={$user_id}" : $CFG->wwwroot."/user/profile.php?id={$user_id}";
+$userprofileurl	=	$CFG->wwwroot."/user/profile.php?id={$user_id}";
 
 if ($user_id != $USER->id) {
 	if (!empty($access_viewotherilp) && !empty($course_id)) {
@@ -205,11 +205,22 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp')." : ".fullname($plpuser));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-entry');
-//$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url($CFG->wwwroot."/blocks/ilp/actions/edit_entrycomment.php",$PARSER->get_params());
 //section name
 $PAGE->navbar->add($title);
 
 //require edit_reportentry html
-require_once($CFG->dirroot.'/blocks/ilp/views/edit_entrycomment.html');
+//require_once($CFG->dirroot.'/blocks/ilp/views/edit_entrycomment.html');
+// removed unnecessary extra headaches
+
+echo $OUTPUT->header();
+
+echo '<div class="ilp yui-skin-sam">';
+
+//render the form
+$mform->display();
+echo '</div>';
+
+echo $OUTPUT->footer();
 

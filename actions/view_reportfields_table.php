@@ -30,14 +30,14 @@ $columns[]	=	'delete';
 
 //setup the array holding the header texts
 $headers	=	array();
-$headers[]	=	'';
+$headers[]	=	get_string('label','block_ilp');
 $headers[]	=	get_string('type','block_ilp');
-$headers[]	=	'';
-$headers[]	=	'';
-$headers[]	=	'';
-$headers[]	=	'';
-$headers[]	=	'';
-$headers[]	=	'';
+$headers[]	=	get_string('moveup','block_ilp');
+$headers[]	=	get_string('movedown','block_ilp');
+$headers[]	=	get_string('edit','block_ilp');
+$headers[]	=	get_string('required','block_ilp');
+$headers[]	=	get_string('summary','block_ilp');
+$headers[]	=	get_string('delete','block_ilp');
 
 //pass the columns to the table
 $flextable->define_columns($columns);
@@ -58,6 +58,8 @@ $flextable->setup();
 
 //get the data on fields to be used in the table
 $reportfields		=	$dbc->get_report_fields_by_position($report_id);
+$min_position = $dbc->upperlower_report_field_position($report_id, 'MIN');
+$max_position = $dbc->upperlower_report_field_position($report_id, 'MAX');
 $totalreportfields	=	count($reportfields);
 
 if (!empty($reportfields)) {
@@ -73,7 +75,7 @@ if (!empty($reportfields)) {
 				
 		$data[] 		=	get_string($plugintype,'block_ilp');
 		
-		if ($row->position != 1) {
+		if ($row->position != $min_position) {
 			//if the field is in any position except 1 it needs a up icon 
 			$title 	=	get_string('moveup','block_ilp');
 			$icon	=	$OUTPUT->pix_url("/t/up");
@@ -86,7 +88,7 @@ if (!empty($reportfields)) {
 			$data[] 	=	"";
 		}
 		
-		if ($totalreportfields != $row->position) {
+		if ($row->position != $max_position) {
 			//if the field is in any position except last it needs a down icon
 			$title 	=	get_string('movedown','block_ilp');
 			$icon	=	$OUTPUT->pix_url("/t/down");
@@ -110,7 +112,7 @@ if (!empty($reportfields)) {
         $icon	= 	$CFG->wwwroot."/blocks/ilp/pix/icons/";
         $icon	.= 	(!empty($row->req)) ? "required.gif" : "notrequired.gif";
 
-        $data[] 			=	"<a href='{$CFG->wwwroot}/blocks/ilp/actions/edit_field_required.php?reportfield_id={$row->id}&report_id={$report_id}'>
+        $data[] 			=	"<a href='{$CFG->wwwroot}/blocks/ilp/actions/edit_field_summary_or_req.php?required_setting=1&reportfield_id={$row->id}&report_id={$report_id}'>
 									<img class='required' src='{$icon}' alt='{$title}' title='{$title}' />
 								</a>";
         //set the summary row
@@ -118,7 +120,7 @@ if (!empty($reportfields)) {
         $icon	= 	$CFG->wwwroot."/blocks/ilp/pix/icons/";
         $icon	.= 	(!empty($row->summary)) ? "summary.png" : "notinsummary.png";
 
-        $data[] 			=	"<a href='{$CFG->wwwroot}/blocks/ilp/actions/edit_field_summary.php?reportfield_id={$row->id}&report_id={$report_id}'>
+        $data[] 			=	"<a href='{$CFG->wwwroot}/blocks/ilp/actions/edit_field_summary_or_req.php?reportfield_id={$row->id}&report_id={$report_id}'>
 									<img class='required' src='{$icon}' alt='{$title}' title='{$title}' height='16' width='16'/>
 								</a>";
 

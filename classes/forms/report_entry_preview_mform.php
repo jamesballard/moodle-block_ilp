@@ -43,7 +43,7 @@ class report_entry_preview_mform extends ilp_moodleform {
 			 global $USER, $CFG;
 
 	         // include the assmgr db
-        	require_once($CFG->dirroot.'/blocks/ilp/db/ilp_db.php');
+        	require_once($CFG->dirroot.'/blocks/ilp/classes/database/ilp_db.php');
 			 
         	$dbc = new ilp_db;
 
@@ -59,7 +59,7 @@ class report_entry_preview_mform extends ilp_moodleform {
         	$mform->addElement('html', '<fieldset id="reportfieldset" class="clearfix ilpfieldset">');
             $mform->addElement('html', '<legend class="ftoggler">'.$report->name.'</legend>');
             
-            $desc	=	html_entity_decode($report->description);
+            $desc	=	html_entity_decode($report->description, ENT_QUOTES, 'UTF-8');
 			
 			$mform->addElement('html', '<div class="descritivetext">'.$desc.'</div>');
                         

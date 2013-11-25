@@ -13,9 +13,6 @@
  * @version 2.0
  */
 
-
-
-// TODO moodle 2.0 complains that this should be $capabilities
 $capabilities = array(
 
 
@@ -181,6 +178,15 @@ $capabilities = array(
             'user' => CAP_PREVENT
         )
     ),
+    'block/ilp:myaddinstance' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'user' => CAP_ALLOW
+        ),
+
+        'clonepermissionsfrom' => 'moodle/my:manageblocks'
+    ),
     'block/ilp:addinstance' => array(
         'riskbitmask' => RISK_SPAM | RISK_XSS,
 
@@ -192,15 +198,5 @@ $capabilities = array(
         ),
 
         'clonepermissionsfrom' => 'moodle/site:manageblocks'
-    ),
-	
-    'block/ilp:myaddinstance' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => array(
-            'user' => CAP_ALLOW
-        ),
-
-        'clonepermissionsfrom' => 'moodle/my:manageblocks'
     ),
 );

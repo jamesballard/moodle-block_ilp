@@ -228,7 +228,9 @@ class ilp_element_plugin_goal extends ilp_element_plugin {
 	  $entry_id=optional_param('entry_id',0,PARAM_INT);
 
 	  if (!empty($this->description)) {
-	       $mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description),ILP_STRIP_TAGS_DESCRIPTION));
+	       $mform->addElement('static', "{$fieldname}_desc", $this->label, strip_tags(html_entity_decode($this->description,
+                                                                                                         ENT_QUOTES,
+                                                                                                         'UTF-8'),ILP_STRIP_TAGS_DESCRIPTION));
 	       $this->label = '';
 	  }
 
@@ -316,17 +318,19 @@ class ilp_element_plugin_goal extends ilp_element_plugin {
       */
      protected function get_courses_and_goals($userid)
      {
+          global $DB;
+          $userid=$DB->get_field('user','idnumber',array('id'=>$userid));
 
 	  $mydata=$this->dbc->get_form_element_data($this->tablename,$this->parent_id);
 
 	  $courses=array(get_string('ilp_element_plugin_goal_nocourses','block_ilp'));
 	  $goals=array(array(get_string('ilp_element_plugin_goal_nogoals','block_ilp')));
 
-	  if(!$misinfo = $this->dbquery($mydata->tablenamefield,array('userid'=>array('='=>$userid))))
+          if(!(isset($userid) and
+               $misinfo = $this->dbquery($mydata->tablenamefield,array($mydata->studentidfield=>array('='=>$userid)))))
 	  {
 	       return array($courses,$goals);
 	  }
-
 	  $tempc=1;
 	  foreach($misinfo as $item)
 	  {
@@ -440,7 +444,7 @@ class ilp_element_plugin_goal extends ilp_element_plugin {
      /*
       * user's input.
       */
-     public function view_data($reportfield_id, $entry_id, &$entryobj) {
+     public function view_data($reportfield_id, $entry_id, &$entryobj, $returnvalue = false) {
 	  $entry = $this->dbc->get_pluginentry($this->tablename, $entry_id, $reportfield_id);
 
 	  $fieldname	=	$reportfield_id."_field";

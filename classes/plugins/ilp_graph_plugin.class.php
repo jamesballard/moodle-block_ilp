@@ -149,7 +149,7 @@ abstract class ilp_graph_plugin extends ilp_plugin  {
         global $CFG;
 
         // include the ilp db
-        require_once($CFG->dirroot . '/blocks/ilp/db/ilp_db.php');
+        require_once($CFG->dirroot . '/blocks/ilp/classes/database/ilp_db.php');
 
         // instantiate the ilp db class needed as this function will be called 
         //when not in object context
@@ -168,7 +168,7 @@ abstract class ilp_graph_plugin extends ilp_plugin  {
     function install($plugin_id)    {
         $graphplugin = $this->dbc->get_graph_plugin_by_id($plugin_id);
 
-        $graphplugin->type = $this->plugin_type();
+        $graphplugin->type = static::plugin_type();
 
         $this->dbc->update_graph_plugin($graphplugin);
     }

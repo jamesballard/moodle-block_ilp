@@ -10,7 +10,7 @@
  * @version 2.0
  */
 
-require_once('../configpath.php');
+require_once('../lib.php');
 
 global $USER, $CFG, $SESSION, $PARSER;
 
@@ -81,7 +81,7 @@ if($mform->is_submitted()) {
 $plpuser	=	$dbc->get_user_by_id($user_id);
 
 $dashboardurl	=	$CFG->wwwroot."/blocks/ilp/actions/view_main.php?user_id={$user_id}&course_id={$course_id}";
-$userprofileurl	=	(stripos($CFG->release,"2.") === false) ? $CFG->wwwroot."/user/view.php?id={$user_id}" : $CFG->wwwroot."/user/profile.php?id={$user_id}";
+$userprofileurl	=	$CFG->wwwroot."/user/profile.php?id={$user_id}";
 if ($user_id != $USER->id) {
     if (!empty($access_viewotherilp) && !empty($course_id)) {
         $listurl	=	"{$CFG->wwwroot}/blocks/ilp/actions/view_studentlist.php?tutor=0&course_id={$course_id}";
@@ -112,7 +112,7 @@ $SITE	=	$dbc->get_course_by_id(SITEID);
 $PAGE->set_title($SITE->fullname." : ".get_string('blockname','block_ilp'));
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagetype('ilp-configuration');
-$PAGE->set_pagelayout('ilp');
+$PAGE->set_pagelayout(ILP_PAGELAYOUT);
 $PAGE->set_url('/blocks/ilp/actions/edit_report_preference.php', $PARSER->get_params());
 
 
