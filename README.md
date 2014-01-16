@@ -4,7 +4,9 @@ ILP enhancements additional information
 
 ILP Mango Release
 
-Individual Learning Plans (ILPs) are becoming central to the support and delivery of personalised learning by providing students with more opportunity to manage and track their own progress. With this in mind, ULCC has developed a fully integrated ILP solution for the Moodle Open Source VLE within inspection criteria outlined by the QIA. Using ULCCs ILP Block you can integrate it with information from external systems, including information for cause for Concerns / Success, attendance, punctuality, exam timetables, timetables, qualifications on entry and initial assessments. It is completely customizable where you can also add your own additional tabs to be displayed in the ILP home page as well. 
+Individual Learning Plans (ILPs) are becoming central to the support and delivery of personalised learning by providing students with more opportunity to manage and track their own progress. With this in mind, ULCC has developed a fully integrated ILP solution for the Moodle Open Source VLE within inspection criteria outlined by the QIA. 
+
+Using ULCCs ILP Block you can integrate it with information from external systems, including information for cause for Concerns / Success, attendance, punctuality, exam timetables, timetables, qualifications on entry and initial assessments. It is completely customizable where you can also add your own additional tabs to be displayed in the ILP home page as well. 
 
 New Features
 
